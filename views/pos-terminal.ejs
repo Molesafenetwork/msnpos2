@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POS Terminal</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* Base layout styles */
+        .pos-container {
+            display: grid;
+            gap: 20px;
+            padding: 40px;
+            transition: all 0.3s ease;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Default layout (Side Cart) */
+        .pos-container.default {
+            grid-template-columns: 3fr 2fr;
+            padding: 40px;
+            height: auto;
+            position: relative;
+        }
+
+        /* Bottom Cart layout */
+        .pos-container.bottom-cart {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto;
+            padding: 40px;
+            height: auto;
+            position: relative;
+        }
+
+        .pos-container.bottom-cart .cart-section {
+            border-left: none;
+            border-top: 1px solid #ddd;
+        }
+
+        /* Compact layout */
+        .pos-container.compact {
+            grid-template-columns: 2fr 1fr;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px;
+            height: auto;
+            position: relative;
+        }
+
+        .pos-container.compact .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+
+        /* Grid Focus layout */
+        .pos-container.grid-focus {
+            grid-template-columns: 4fr 1fr;
+            padding: 40px;
+            height: auto;
+            position: relative;
+        }
+
+        .pos-container.grid-focus .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        }
+
+        /* Categories on Top layout */
+        .pos-container.categories-top {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr;
+            padding: 40px;
+            height: auto;
+            position: relative;
+        }
+
+        .pos-container.categories-top .category-tabs {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 100;
+            padding: 10px 0;
+        }
+
+        .pos-container.categories-top .items-section {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 20px;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        /* Common category styles */
+        .category-tab {
+            padding: 12px 15px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: left;
+        }
+
+        /* Remove all other active states first */
+        .category-tab.active {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        /* Only apply light blue to "All Items" when active */
+        button.category-tab.all-items.active {
+            background: lightblue !important;
+            color: #333;
+        }
+
+        /* Style for category wrapper tabs */
+        .category-tab-wrapper .category-tab.active {
+            background: #e0e0e0 !important;
+            color: #333;
+        }
+
+        /* Remove the header */
+        header, footer {
+            display: none !important;
+        }
+
+        /* Device-specific layouts */
+        /* Mobile Portrait Layout */
+        .pos-container.mobile-portrait {
+            grid-template-columns: 1fr;
+            padding: 0;
+            gap: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .pos-container.mobile-portrait .items-section {
+            display: grid;
+            grid-template-columns: 70px 1fr;
+            gap: 2px;
+            padding: 0;
+            width: 100vw;
+        }
+
+        .pos-container.mobile-portrait .category-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(100vh - 200px);
+            padding: 2px;
+            margin: 0;
+            width: 70px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 35vh;
+            background: white;
+        }
+
+        .pos-container.mobile-portrait .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 4px;
+            padding: 2px 2px 2px 72px;
+            width: 100%;
+        }
+
+        .pos-container.mobile-portrait .category-tab,
+        .pos-container.mobile-portrait .category-tab.all-items {
+            padding: 4px 6px;
+            font-size: 0.75em;
+            min-height: 28px;
+            width: 100%;
+            white-space: normal;
+            text-align: left;
+            line-height: 1.1;
+            margin: 0;
+        }
+
+        .pos-container.mobile-portrait .item-button {
+            padding: 4px;
+            min-height: 60px;
+            font-size: 0.8em;
+            margin: 0;
+        }
+
+        .pos-container.mobile-portrait .item-button h3 {
+            font-size: 0.85em;
+            margin: 0 0 2px 0;
+            line-height: 1.1;
+        }
+
+        .pos-container.mobile-portrait .item-button p {
+            margin: 0 0 2px 0;
+            font-size: 0.8em;
+        }
+
+        .pos-container.mobile-portrait .item-actions button {
+            padding: 2px 4px;
+            font-size: 0.75em;
+        }
+
+        .pos-container.mobile-portrait .cart-section {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #ddd;
+            max-height: 35vh;
+            overflow-y: auto;
+            padding: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .pos-container.mobile-portrait .cart-section h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        .pos-container.mobile-portrait .cart-item {
+            padding: 5px;
+            font-size: 0.9em;
+        }
+
+        .pos-container.mobile-portrait .quantity-controls {
+            gap: 5px;
+        }
+
+        .pos-container.mobile-portrait .quantity-controls button {
+            padding: 3px 6px;
+        }
+
+        .pos-container.mobile-portrait .quantity-controls input {
+            width: 40px;
+            padding: 3px;
+        }
+
+        .pos-container.mobile-portrait .total-section {
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .pos-container.mobile-portrait .total-section h3 {
+            font-size: 1.1em;
+            margin: 0 0 10px 0;
+        }
+
+        .pos-container.mobile-portrait .total-section button {
+            padding: 8px;
+            font-size: 0.9em;
+            margin: 0 5px 5px 0;
+        }
+
+        /* Add padding to the bottom of the items section to prevent cart overlap */
+        .pos-container.mobile-portrait .items-section {
+            padding-bottom: 35vh;
+        }
+
+        /* Ensure the delete category button is smaller on mobile */
+        .pos-container.mobile-portrait .delete-category-btn {
+            width: 16px;
+            height: 16px;
+            font-size: 12px;
+            right: -4px;
+            top: -4px;
+        }
+
+        /* Make sure categories don't wrap to top on small screens */
+        @media (max-width: 480px) {
+            .pos-container.mobile-portrait .items-section {
+                grid-template-columns: 70px 1fr;
+                margin: 0;
+                width: 100%;
+            }
+            
+            .pos-container.mobile-portrait .category-tabs {
+                width: 70px;
+            }
+
+            .pos-container.mobile-portrait .items-grid {
+                padding-left: 72px;
+                width: 100%;
+            }
+        }
+
+        /* Tablet Layout */
+        .pos-container.tablet {
+            grid-template-columns: 1fr;
+            padding: 20px;
+        }
+
+        .pos-container.tablet .items-section {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 20px;
+        }
+
+        .pos-container.tablet .category-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-x: visible;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 0;
+            max-height: 80vh;
+        }
+
+        .pos-container.tablet .category-tab,
+        .pos-container.tablet .category-tab.all-items {
+            min-height: 45px;
+            padding: 10px 15px;
+            width: 100%;
+            white-space: normal;
+            display: flex;
+            align-items: center;
+        }
+
+        .pos-container.tablet .category-tab-wrapper {
+            width: 100%;
+        }
+
+        .pos-container.tablet .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        /* Desktop Compact */
+        .pos-container.desktop-compact {
+            max-width: 1200px;
+            margin: 0 auto;
+            grid-template-columns: 7fr 3fr;
+            padding: 20px;
+        }
+
+        /* Large Monitor */
+        .pos-container.large-monitor {
+            grid-template-columns: 4fr 1fr;
+            padding: 30px;
+        }
+
+        .pos-container.large-monitor .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        /* Touch Screen Kiosk */
+        .pos-container.touch-kiosk {
+            display: grid;
+            grid-template-columns: 200px 1fr 280px;
+            min-height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            gap: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+        }
+
+        .pos-container.touch-kiosk .category-tabs {
+            width: 180px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: #2c3e50;
+            min-height: 100vh;
+            max-height: 100vh;
+            overflow-y: auto;
+            margin: 0;
+            border-right: 1px solid #1a2631;
+        }
+
+        .pos-container.touch-kiosk .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            padding: 12px;
+            overflow-y: auto;
+            background: white;
+            min-height: 100vh;
+            max-height: 100vh;
+            margin: 0;
+            border-right: 1px solid #e1e8ed;
+        }
+
+        .pos-container.touch-kiosk .cart-section {
+            width: 250px;
+            background: white;
+            border-left: 1px solid #e1e8ed;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-height: 100vh;
+            overflow-y: auto;
+            padding: 15px;
+            margin: 0;
+        }
+
+        .pos-container.touch-kiosk .category-tab,
+        .pos-container.touch-kiosk .category-tab.all-items {
+            min-height: 50px;
+            padding: 12px 15px;
+            width: 100%;
+            white-space: normal;
+            display: flex;
+            align-items: center;
+            font-size: 1.1em;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .pos-container.touch-kiosk .category-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .pos-container.touch-kiosk .category-tab.active {
+            background: #3498db;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .pos-container.touch-kiosk .item-button {
+            padding: 15px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .pos-container.touch-kiosk .item-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .pos-container.touch-kiosk .item-button h3 {
+            font-size: 1em;
+            margin: 0;
+            text-align: center;
+            color: #2c3e50;
+            width: 100%;
+        }
+
+        .pos-container.touch-kiosk .item-button p {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 8px 0;
+            width: 100%;
+        }
+
+        .pos-container.touch-kiosk .item-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .pos-container.touch-kiosk .item-actions button {
+            padding: 8px 12px;
+            font-size: 0.9em;
+            border: none;
+            border-radius: 4px;
+            background: #FE9900;
+            color: white;
+            cursor: pointer;
+        }
+
+        .pos-container.touch-kiosk .action-buttons {
+            position: fixed;
+            top: 1px;
+            right: 290px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .pos-container.touch-kiosk .action-buttons button {
+            padding: 8px 12px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background: #FE9900;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-content input,
+        .modal-content select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .modal-content button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+        }
+
+        .modal-content button[type="button"] {
+            background: #95a5a6;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .pos-container:not(.mobile-portrait) {
+                grid-template-columns: 1fr !important;
+                padding: 10px;
+            }
+
+            .cart-section {
+                border-left: none;
+                border-top: 1px solid #ddd;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .items-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .item-button {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .item-button:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .cart-section {
+            border-left: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .quantity-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .quantity-controls input {
+            width: 50px;
+            text-align: center;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .quantity-controls button {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .quantity-controls button:hover {
+            background: #f0f0f0;
+        }
+
+        .total-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+
+        .category-tab-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .delete-category-btn {
+            position: absolute;
+            right: -8px;
+            top: -8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .delete-category-btn:hover {
+            background: #cc0000;
+        }
+
+        .edit-btn {
+            background-color: #ffa500;
+            color: white;
+            border: none;
+            padding: 5px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+
+        .edit-btn:hover {
+            background-color: #cc8400;
+        }
+
+        .item-actions {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        /* Fix All Items button to match other categories */
+        button.category-tab.all-items {
+            width: 100%;
+            min-height: 45px;
+            white-space: normal;
+        }
+
+        button.category-tab.all-items.active {
+            background: lightblue !important;
+            color: #333;
+        }
+
+        .category-tab-wrapper .category-tab.active {
+            background: #e0e0e0 !important;
+            color: #333;
+        }
+
+        /* Reset base styles for non-touch-kiosk layouts */
+        .pos-container:not(.touch-kiosk) {
+            position: relative;
+            min-height: auto;
+            max-height: none;
+            overflow: visible;
+        }
+
+        .pos-container:not(.touch-kiosk) .category-tabs {
+            width: auto;
+            display: flex;
+            flex-direction: row;
+            background: transparent;
+            height: auto;
+            overflow: auto;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .pos-container:not(.touch-kiosk) .items-grid {
+            height: auto;
+            overflow: visible;
+            background: transparent;
+        }
+
+        .pos-container:not(.touch-kiosk) .cart-section {
+            width: auto;
+            height: auto;
+            overflow: visible;
+        }
+
+        /* Preserve mobile portrait specific styles */
+        .pos-container.mobile-portrait:not(.touch-kiosk) {
+            padding: 0;
+            gap: 0;
+        }
+
+        /* Preserve tablet specific styles */
+        .pos-container.tablet:not(.touch-kiosk) {
+            padding: 20px;
+        }
+
+        /* Preserve desktop compact specific styles */
+        .pos-container.desktop-compact:not(.touch-kiosk) {
+            padding: 20px;
+            max-width: 1200px;
+        }
+
+        /* Preserve large monitor specific styles */
+        .pos-container.large-monitor:not(.touch-kiosk) {
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pos-container touch-kiosk">
+        <div class="category-tabs" id="categoryTabs">
+            <button class="category-tab all-items active" onclick="filterByCategory('all')">All Items</button>
+            <!-- Categories will be populated here -->
+        </div>
+        
+        <div class="items-grid" id="itemsGrid">
+            <!-- Items will be populated here -->
+        </div>
+    
+        <div class="cart-section">
+            <h2>Current Cart</h2>
+            <div id="cartItems">
+                <!-- Cart items will be populated here -->
+            </div>
+            <div class="total-section">
+                <h3>Total: $<span id="cartTotal">0.00</span></h3>
+                <button onclick="generateInvoice()">Generate Invoice</button>
+                <button onclick="clearCart()">Clear Cart</button>
+            </div>
+        </div>
+    
+        <% if (username === 'admin') { %>
+        <div class="action-buttons">
+            <button onclick="showAddItemModal()">Add Item</button>
+            <button onclick="showAddCategoryModal()">Add Category</button>
+        </div>
+        <% } %>
+    
+        <button id="searchButton">Search Items</button>
+    
+        <!-- Search Popup -->
+        <div class="popup" id="searchPopup" style="display: none;">
+            <div class="popup-content">
+                <span class="close" onclick="closeSearchPopup()">&times;</span>
+                <h2>Search Items</h2>
+                <input type="text" id="searchInput" placeholder="Type your search here..." />
+                <button id="submitSearchButton">Search</button>
+            </div>
+        </div>
+    
+        <!-- Search Results Popup -->
+        <div class="popup" id="searchResultsPopup" style="display: none;">
+            <div class="popup-content">
+                <span class="close" onclick="closeSearchResultsPopup()">&times;</span>
+                <h2>Search Results</h2>
+                <div id="searchResultsGrid" class="search-results-grid"></div>
+            </div>
+        </div>
+
+        <!-- Price Override Popup -->
+        <div class="popup" id="priceOverridePopup" style="display: none;">
+            <div class="popup-content">
+                <span class="close" onclick="closePriceOverridePopup()">&times;</span>
+                <h2>Price Override</h2>
+                <div class="price-override-controls">
+                    <div class="override-input-group">
+                        <label for="overrideAmount">Amount ($)</label>
+                        <input type="number" 
+                               id="overrideAmount" 
+                               step="0.01" 
+                               placeholder="Enter amount"
+                               min="0">
+                    </div>
+                    <div class="override-buttons">
+                        <button onclick="applyPriceOverride('add')">Add Amount</button>
+                        <button onclick="applyPriceOverride('subtract')">Subtract Amount</button>
+                        <button onclick="applyPriceOverride('set')">Set Total</button>
+                    </div>
+                    <div class="override-reason">
+                        <label for="overrideReason">Reason for Override</label>
+                        <select id="overrideReason" required>
+                            <option value="">Select reason...</option>
+                            <option value="pricing_error">Pricing Error</option>
+                            <option value="manager_discount">Manager Discount</option>
+                            <option value="promotion">Promotion</option>
+                            <option value="damage">Damaged Item</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <% if (username === 'admin') { %>
+    <!-- Add Item Modal -->
+    <div id="addItemModal" style="display: none;" class="modal">
+        <div class="modal-content">
+            <h3>Add New Item</h3>
+            <form id="addItemForm">
+                <input type="text" name="name" placeholder="Item Name" required>
+                <input type="text" name="description" placeholder="Description" required>
+                <input type="number" name="price" step="0.01" placeholder="Price" required>
+                <input type="number" name="gst" step="0.1" placeholder="GST %" value="0" required min="0" max="100">
+                <select name="category" required>
+                    <option value="">Select Category</option>
+                    <!-- Categories will be populated here -->
+                </select>
+                <button type="submit">Save Item</button>
+                <button type="button" onclick="closeAddItemModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div id="addCategoryModal" style="display: none;" class="modal">
+        <div class="modal-content">
+            <h3>Add New Category</h3>
+            <form id="addCategoryForm">
+                <input type="text" name="name" placeholder="Category Name" required>
+                <button type="submit">Save Category</button>
+                <button type="button" onclick="closeAddCategoryModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div id="editItemModal" style="display: none;" class="modal">
+        <div class="modal-content">
+            <h3>Edit Item</h3>
+            <form id="editItemForm">
+                <input type="hidden" name="itemId">
+                <input type="text" name="name" placeholder="Item Name" required>
+                <input type="text" name="description" placeholder="Description" required>
+                <input type="number" name="price" step="0.01" placeholder="Price" required>
+                <input type="number" name="gst" step="0.1" placeholder="GST %" value="0" required min="0" max="100">
+                <select name="category" required>
+                    <option value="">Select Category</option>
+                    <!-- Categories will be populated here -->
+                </select>
+                <button type="submit">Update Item</button>
+                <button type="button" onclick="closeEditItemModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <script>
+        // Pass the username to client-side JavaScript
+        window.isAdmin = <%= username === 'admin' %>;
+    </script>
+    <script src="/js/pos-terminal.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set touch-kiosk class
+            const posContainer = document.querySelector('.pos-container');
+            posContainer.className = 'pos-container touch-kiosk';
+
+            // Search button click event
+            const searchButton = document.getElementById('searchButton');
+            if (searchButton) {
+                console.log('Search button found, adding click listener');
+                searchButton.addEventListener('click', () => {
+                    const searchPopup = document.getElementById('searchPopup');
+                    if (searchPopup) {
+                        searchPopup.style.display = 'block';
+                        console.log('Search popup opened');
+                    } else {
+                        console.error('Search popup element not found');
+                    }
+                });
+            }
+
+            // Submit search button click event
+            const submitSearchButton = document.getElementById('submitSearchButton');
+            if (submitSearchButton) {
+                console.log('Submit search button found, adding click listener');
+                submitSearchButton.addEventListener('click', performSearch);
+            }
+
+            // Search input Enter key event
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                console.log('Search input found, adding keypress listener');
+                searchInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        performSearch();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

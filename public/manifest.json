@@ -1,0 +1,20 @@
+{
+    "name": "mole Safe Invoice Management",
+    "short_name": "msn invoices",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#007bff",
+    "icons": [
+      {
+        "src": "https://cdn.glitch.global/5ffbabee-930c-483b-ad9b-db2d7694e47c/5ac477d0-714b-49a2-9ace-9a9f4a827c56.image.png?v=1727942550842",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "https://cdn.glitch.global/5ffbabee-930c-483b-ad9b-db2d7694e47c/HERO.png?v=1737272095031",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }

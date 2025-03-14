@@ -1,0 +1,47 @@
+<h1>All Invoices</h1>
+<div class="content-wrapper">
+    <form action="/cleanup-invoices" method="POST" style="margin-bottom: 20px;">
+        <button type="submit" style="background-color: #ff9900; color: white;">Clean Up Invalid Invoices</button>
+    </form>
+
+    <form class="search-form" action="/invoices" method="GET">
+        <input type="text" name="search" placeholder="Search by CRN, client name, or contact info" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
+        <button type="submit">Search</button>
+    </form>
+
+    <ul>
+    <% invoices.forEach(function(invoice) { %>
+        <li>
+            <a href="/invoice/<%= invoice.crn %>">
+                Invoice <%= invoice.crn %> - <%= invoice.clientName || 'N/A' %> - $<%= invoice.totalAmount ? invoice.totalAmount.toFixed(2) : '0.00' %>
+            </a>
+            <br>
+            Date: <%= new Date(invoice.date).toLocaleString() %> | Status: <%= invoice.status %>
+            <form action="/update-invoice-status/<%= invoice.crn %>" method="POST" style="display: inline;">
+                <select name="status">
+                    <option value="Pending" <%= invoice.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                    <option value="Paid" <%= invoice.status === 'Paid' ? 'selected' : '' %>>Paid</option>
+                </select>
+                <button type="submit">Update Status</button>
+            </form>
+            <form action="/delete-invoice/<%= invoice.crn %>" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
+                <button type="submit" style="background-color: #ff4d4d; color: white;">Delete</button>
+            </form>
+        </li>
+    <% }); %>
+    </ul>
+    <a href="/dashboard">Back to Dashboard</a>
+</div>
+
+<style>
+    .search-form {
+        margin-bottom: 20px;
+    }
+    .search-form input {
+        padding: 5px;
+        width: 300px;
+    }
+    .search-form button {
+        padding: 5px 10px;
+    }
+</style>

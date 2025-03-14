@@ -1,0 +1,86 @@
+<h1>Welcome to the msn tax managment system, <%= username %></h1>
+  <div class="dashboard-grid">
+  
+     <div class="dashboard-item">
+        <i class="fas fa-clock"></i>
+        <a href="/clock">Clock In/Out</a>
+        <p>Manage your work hours</p>
+    </div>
+    
+    <div class="dashboard-item">
+        <i class="fas fa-cash-register"></i>
+        <a href="/pos-terminal">POS Terminal</a>
+        <p>Quick invoice generation with saved items</p>
+    </div>
+
+    <div class="dashboard-item">
+        <i class="fas fa-file-invoice"></i>
+        <a href="/create-invoice">Create New Invoice</a>
+        <p>Generate a new .pdf invoice</p>
+    </div>
+    
+    
+    <% if (username === 'admin') { %>
+      <div class="dashboard-item"> <i><h3> ADMIN SECTION AFTER THIS BOX</h3></i> </div>
+      
+       <div class="dashboard-item">
+        <i class="fa fa-institution"></i>
+        <a href="/income">Income Summary</a>
+        <p>Review your financial summary based on your invoices/expenses</p>
+    </div>
+    
+    <div class="dashboard-item">
+        <i class="fas fa-chart-bar"></i>
+        <a href="/statistics">View Statistics</a>
+        <p>paid/pending/overdue invoices</p>
+    </div>
+    
+    <div class="dashboard-item">
+        <i class="fas fa-cog"></i>
+        <a href="/settings">Tax Settings/other</a>
+        <p>Customize tax brackets/other</p>
+    </div>
+      
+       <div class="dashboard-item">
+        <i class="fas fa-list"></i>
+        <a href="/invoices">View All Invoices</a>
+        <p>View & edit client invoices</p>
+    </div>
+      
+        <div class="dashboard-item">
+            <i class="fas fa-receipt"></i>
+            <a href="/add-receipt">Add Receipt/expense</a>
+            <p>Record a new expense</p>
+        </div>
+        
+        <div class="dashboard-item">
+            <i class="fas fa-file-alt"></i>
+            <a href="/receipts">View Receipts</a>
+            <p>View or remove receipts/expenses</p>
+        </div>
+        
+        <div class="dashboard-item">
+            <i class="fas fa-calculator"></i>
+            <a href="/deductions">Manage Deductions</a>
+            <p>Review & add your tax deductions</p>
+        </div>
+
+        <div class="dashboard-item">
+            <i class="fas fa-users-cog"></i>
+            <a href="/manage-users">Manage Users</a>
+            <p>Manage user accounts/APIS</p>
+        </div>
+      
+        <div class="dashboard-item">
+            <i class="fas fa-book"></i>
+            <a href="/api-docs">API Documentation</a>
+            <p>View API guidelines</p>
+        </div>
+      
+        <div class="dashboard-item">
+            <i class="fas fa-list"></i>
+            <a href="/time-logs">Time Logs/employee management</a>
+            <p>View employee info</p>
+        </div>
+    <% } %>
+</div>

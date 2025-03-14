@@ -1,0 +1,42 @@
+
+
+<h1>Create New Invoice</h1>
+<div class="content-wrapper">
+    <form action="/generate-invoice" method="POST">
+        <h2>Client Details (Optional)</h2>
+        <input type="text" name="clientName" placeholder="Client Name">
+        <input type="text" name="clientAddress" placeholder="Client Address">
+        <input type="email" name="clientEmail" placeholder="Client Email">
+        
+        <h2>Payment Method</h2>
+        <select name="paymentMethod" required>
+            <option value="Cash">Cash</option>
+            <option value="Card">Card</option>
+            <option value="Crypto">Crypto</option>
+            <option value="BPAY">BPAY</option>
+            <option value="BSB">BSB</option>
+            <option value="PayID">PayID</option>
+            <option value="Bank Deposit">Bank Deposit</option>
+        </select>
+        <input type="text" name="cardLastFour" placeholder="Last 4 digits of card (if applicable)">
+        
+        <h2>Invoice Items</h2>
+        <div id="items">
+            <div class="item">
+                <input type="text" name="itemName[]" placeholder="Item 1 Name" required>
+                <input type="text" name="itemDescription[]" placeholder="Item 1 Description" required>
+                <input type="number" name="itemUnitCost[]" placeholder="Unit Cost" step="0.01" required>
+                <input type="number" name="itemQuantity[]" placeholder="Quantity" required>
+                <input type="number" name="itemGST[]" placeholder="GST %" min="0" max="100" step="0.1" required>
+            </div>
+        </div>
+        <button type="button" onclick="addItem()">Add Item</button>
+        <button type="submit">Generate Invoice</button>
+    </form>
+    <a href="/dashboard">Back to Dashboard</a>
+</div>
+
+<style>
+    .item { margin-bottom: 10px; }
+</style>
+<script src="/js/invoice.js"></script>

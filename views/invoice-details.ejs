@@ -1,0 +1,105 @@
+<h1>Invoice Details</h1>
+<div class="content-wrapper">
+    <div class="invoice-header">
+          
+        <p>CRN: <%= invoice.crn %></p>
+    </div>
+    
+    <form id="invoiceForm">
+        <p>Date: <input type="date" name="date" value="<%= invoice.date ? new Date(invoice.date).toISOString().split('T')[0] : '' %>"></p>
+        <p>Status: 
+            <select name="status">
+                <option value="Pending" <%= invoice.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                <option value="Paid" <%= invoice.status === 'Paid' ? 'selected' : '' %>>Paid</option>
+            </select>
+        </p>
+        <p>Client Name: <input type="text" name="clientName" value="<%= invoice.clientName || '' %>"></p>
+        <p>Client Address: <input type="text" name="clientAddress" value="<%= invoice.clientAddress || '' %>"></p>
+        <p>Client Email: <input type="email" name="clientEmail" value="<%= invoice.clientEmail || '' %>"></p>
+        
+        <h2>Invoice Items:</h2>
+        <div id="items">
+            <% (invoice.items || []).forEach((item, index) => { %>
+                <div class="item">
+                    <input type="text" name="itemName[]" value="<%= item.name %>" required>
+                    <input type="text" name="itemDescription[]" value="<%= item.description %>" required>
+                    <input type="number" name="itemUnitCost[]" value="<%= item.unitCost %>" step="0.01" required>
+                    <input type="number" name="itemQuantity[]" value="<%= item.quantity %>" required>
+                    <input type="number" name="itemGST[]" value="<%= item.gstPercentage %>" step="0.1" required>
+                </div>
+            <% }); %>
+        </div>
+        <button type="button" onclick="addItem()">Add Item</button>
+        
+        <p>Total Amount: $<%= invoice.totalAmount ? invoice.totalAmount.toFixed(2) : '0.00' %></p>
+        <p>Total GST: $<%= invoice.totalGST ? invoice.totalGST.toFixed(2) : '0.00' %></p>
+        
+        <button type="button" onclick="updateInvoice()">Update Invoice</button>
+    </form>
+    
+    <a href="/generate-pdf/<%= invoice.crn %>" target="_blank">Export PDF</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    function addItem() {
+        const itemsDiv = document.getElementById('items');
+        const newItem = document.createElement('div');
+        newItem.className = 'item';
+        newItem.innerHTML = `
+            <input type="text" name="itemName[]" required>
+            <input type="text" name="itemDescription[]" required>
+            <input type="number" name="itemUnitCost[]" step="0.01" required>
+            <input type="number" name="itemQuantity[]" required>
+            <input type="number" name="itemGST[]" step="0.1" required>
+        `;
+        itemsDiv.appendChild(newItem);
+    }
+
+    function updateInvoice() {
+        const form = document.getElementById('invoiceForm');
+        const formData = new FormData(form);
+        
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            if (key.endsWith('[]')) {
+                if (!data[key]) {
+                    data[key] = [];
+                }
+                data[key].push(value);
+            } else {
+                data[key] = value;
+            }
+        }
+        
+        axios.post('/update-invoice/<%= invoice.crn %>', data)
+            .then(response => {
+                if (response.data.success) {
+                    alert('Invoice updated successfully');
+                    window.location.reload();
+                } else {
+                    alert('Error updating invoice: ' + response.data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating invoice:', error);
+                alert('Error updating invoice: ' + (error.response?.data?.error || error.message));
+            });
+    }
+
+    function updateInvoiceStatus(status) {
+        axios.post('/update-invoice-status/<%= invoice.crn %>', { status })
+            .then(response => {
+                if (response.data.success) {
+                    alert('Invoice status updated successfully');
+                    window.location.reload();
+                } else {
+                    alert('Error updating invoice status: ' + response.data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating invoice status:', error);
+                alert('Error updating invoice status: ' + (error.response?.data?.error || error.message));
+            });
+    }
+</script>

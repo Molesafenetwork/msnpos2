@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200vh;
+            flex-direction: column;
+        }
+
+        .tos-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease-in-out forwards;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 200vh; /* Set the height to fill most of the screen */
+        }
+
+        .tos-container h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center; /* Center-align the header */
+        }
+
+        .tos-container p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .tos-container a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .tos-container button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            align-self: center;
+        }
+
+        .tos-container button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Animation for the fade-in effect */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .footer-banner {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+            z-index: -1; /* Ensure it's behind the loading elements */
+        }
+
+        .footer-banner2 {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="tos-container">
+        <h1>Terms of Service</h1>
+        <p>Welcome to your general TOS. By using our services, you agree to the following Terms of Service:</p>
+        
+        <p><strong>Liability Disclaimer:</strong> We are not liable for any loss or destruction of data, system malfunctions, bugs, or other issues arising from the use of our services. You acknowledge and accept the risks involved in using our software and services. The authorized distributor is also not liable for any damages, failure to perform mentioned tasks, or any other issues that may arise as per these terms.</p>
+
+        <p><strong>Service Termination:</strong> We reserve the right to terminate our services at any time without notice. However, we will attempt to provide a minimum of 15 days' notice where possible. Ideally, a notice period of at least 180 days will be given, with reminders provided when nearing the end of the service contract.</p>
+
+        <p><strong>Service Availability:</strong> While we aim to provide a continuous and reliable service, we make no guarantees regarding the uptime or availability of the services. Maintenance, updates, or unforeseen issues may cause temporary interruptions.</p>
+
+        <p><strong>Use of Software:</strong> By using our software, you agree to follow all applicable laws and regulations. Any unauthorized use, including redistribution or reverse engineering of the software, is strictly prohibited.</p>
+
+        <p><strong>Customer Support:</strong> If you experience any issues or have questions about the software, please contact the representative from whom you obtained your license. All issues will be logged, prioritized, and addressed as quickly as possible. We encourage you to reach out for any concerns so that they can be addressed promptly.</p>
+
+        <p><strong>Limitation of Liability for Distributors:</strong> The authorized distributor holds no liability for any damages, failures, or inability to complete any mentioned tasks, including system malfunctions, software bugs, or interruptions of service. They are not responsible for any losses incurred while using the software or services provided by Molesafe.</p>
+
+        <button onclick="window.location.href='/login';">Login</button>
+
+        <p>By continuing to use our software, you automatically agree to these terms and conditions.</p>
+    </div>
+</body>
+</html>

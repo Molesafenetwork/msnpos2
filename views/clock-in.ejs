@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clock In/Out</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="clock-container">
+        <h1>Clock In/Out System</h1>
+        <div id="clockStatus">
+            <% if (isLoggedIn) { %>
+                <h2>Welcome, <%= username %></h2>
+                <div id="currentStatus"></div>
+            <% } else { %>
+                <h2>Please log in to clock in/out</h2>
+            <% } %>
+        </div>
+        
+        <div class="clock-actions">
+            <button id="clockInBtn" onclick="clockIn()">Clock In</button>
+            <button id="clockOutBtn" onclick="clockOut()">Clock Out</button>
+        </div>
+
+        <% if (isAdmin) { %>
+        <div class="admin-controls">
+            <h3>Admin Controls</h3>
+            <div class="time-logs">
+                <h3>Employee Time Logs</h3>
+                <div class="filters">
+                    <select id="employeeFilter">
+                        <option value="">All Employees</option>
+                    </select>
+                    <input type="date" id="startDate">
+                    <input type="date" id="endDate">
+                    <button onclick="filterLogs()">Filter</button>
+                </div>
+                <div id="timeLogs" class="time-logs-list"></div>
+            </div>
+            
+            <div class="admin-actions">
+                <button onclick="showAddShiftModal()">Add Manual Entry</button>
+                <button onclick="exportTimeLogs()">Export to CSV</button>
+            </div>
+        </div>
+
+        <div id="employeeShifts" class="employee-shifts">
+            <!-- Individual employee shifts will be displayed here -->
+        </div>
+
+        <!-- Add Manual Entry Modal -->
+        <div id="addShiftModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Add Manual Time Entry</h2>
+                <form id="manualEntryForm">
+                    <select id="shiftEmployee" required>
+                        <!-- Will be populated by JavaScript -->
+                    </select>
+                    <input type="datetime-local" id="clockInTime" required>
+                    <input type="datetime-local" id="clockOutTime">
+                    <button type="submit">Add Entry</button>
+                </form>
+            </div>
+        </div>
+        <% } %>
+    </div>
+    <script>
+        window.isAdmin = <%= isAdmin %>;
+    </script>
+    <script src="/js/clock.js"></script>
+</body>
+</html> 
