@@ -1,0 +1,32 @@
+
+<h1>Invoice Statistics</h1>
+<div class="content-wrapper">
+    <canvas id="invoiceChart" width="400" height="200"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    fetch('/api/invoice-stats')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('invoiceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Total Invoices', 'Paid Invoices', 'Pending Invoices'],
+                    datasets: [{
+                        label: 'Invoice Statistics',
+                        data: [data.totalInvoices, data.paidInvoices, data.pendingInvoices],
+                        backgroundColor: ['blue', 'green', 'orange']
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+</script>

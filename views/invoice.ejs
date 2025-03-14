@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Invoice Appearance</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h1>Edit Invoice Appearance</h1>
+    <form id="editInvoiceForm">
+        <h2>Invoice Header</h2>
+        <label for="companyName">Company Name:</label>
+        <input type="text" id="companyName" name="companyName" value="<%= invoice.companyName %>" required>
+
+        <label for="logo">Logo URL:</label>
+        <input type="text" id="logo" name="logo" value="<%= invoice.logo %>" required>
+
+        <h2>Invoice Details</h2>
+        <label for="invoiceTitle">Invoice Title:</label>
+        <input type="text" id="invoiceTitle" name="invoiceTitle" value="<%= invoice.title %>" required>
+
+        <label for="footerText">Footer Text:</label>
+        <textarea id="footerText" name="footerText" required><%= invoice.footerText %></textarea>
+
+        <h2>Layout Settings</h2>
+        <label for="fontSize">Font Size:</label>
+        <input type="number" id="fontSize" name="fontSize" value="<%= invoice.fontSize %>" required>
+
+        <label for="color">Text Color:</label>
+        <input type="color" id="color" name="color" value="<%= invoice.textColor %>" required>
+
+        <button type="submit">Save Changes</button>
+    </form>
+    <a href="/dashboard">Back to Dashboard</a>
+
+    <script src="/js/edit-invoice.js"></script>
+</body>
+</html>

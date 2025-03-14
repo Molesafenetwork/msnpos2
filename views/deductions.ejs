@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tax Deductions Management</title>
+    <style>
+        .content-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-section {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .filter-section h3 {
+            margin-top: 0;
+        }
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .edit-btn, .delete-btn, .view-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .edit-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .view-btn {
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+        }
+        .filter-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .reset-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .summary-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .add-deduction-form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group input, .form-group select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .export-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .compliance-note {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid #007bff;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .pagination button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .pagination button:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+        .deduction-type-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .deduction-type-info h4 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .deduction-type-info ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .deduction-type-info li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .deduction-type-info li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #007bff;
+        }
+        .category-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .category-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .progress-bar div {
+            height: 100%;
+            background: #007bff;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .image-upload {
+            border: 2px dashed #ddd;
+            padding: 20px;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .image-upload:hover {
+            border-color: #007bff;
+        }
+        .image-upload i {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="content-wrapper">
+        <h1>Tax Deductions Management</h1>
+
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <h3>Financial Year Summary</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <strong>Total Deductions:</strong> $<%= deductions.reduce((sum, d) => sum + d.amount, 0).toFixed(2) %>
+                </div>
+                <div class="summary-item">
+                    <strong>Estimated Tax Savings:</strong> $<%= (deductions.reduce((sum, d) => sum + d.amount, 0) * 0.325).toFixed(2) %>
+                </div>
+                <div class="summary-item">
+                    <strong>Pending Review:</strong> <%= deductions.filter(d => !d.reviewed).length %>
+                </div>
+                <div class="summary-item">
+                    <strong>Last Updated:</strong> <%= new Date().toLocaleDateString() %>
+                </div>
+            </div>
+            
+            <!-- Category Statistics -->
+            <h4 style="margin-top: 20px;">Category Breakdown</h4>
+            <div class="category-stats">
+                <% 
+                const categoryTotals = deductions.reduce((acc, d) => {
+                    acc[d.category] = (acc[d.category] || 0) + d.amount;
+                    return acc;
+                }, {});
+                const totalAmount = deductions.reduce((sum, d) => sum + d.amount, 0);
+                Object.entries(categoryTotals).forEach(([category, amount]) => {
+                    const percentage = (amount / totalAmount * 100).toFixed(1);
+                %>
+                    <div class="category-item">
+                        <div><strong><%= category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></strong></div>
+                        <div>$<%= amount.toFixed(2) %> (<%= percentage %>%)</div>
+                        <div class="progress-bar">
+                            <div style="width: <%= percentage %>%"></div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+
+        <!-- Deduction Type Information -->
+        <div class="deduction-type-info">
+            <h4>Available Deduction Types</h4>
+            <ul>
+                <li><strong>Work-Related Expenses:</strong> Vehicle, travel, clothing, education</li>
+                <li><strong>Home Office Expenses:</strong> Utilities, internet, phone, equipment</li>
+                <li><strong>Investment Deductions:</strong> Interest, property expenses, dividend deductions</li>
+                <li><strong>Business Expenses:</strong> Professional services, insurance, subscriptions</li>
+                <li><strong>Capital Allowances:</strong> Depreciation of assets, immediate write-offs</li>
+            </ul>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h3>Filter Deductions</h3>
+            <form id="filterForm">
+                <div class="filter-group">
+                    <label for="categoryFilter">Category:</label>
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <% new Set(deductions.map(d => d.category)).forEach(category => { %>
+                            <option value="<%= category %>"><%= category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></option>
+                        <% }); %>
+                    </select>
+
+                    <label for="sourceFilter">Source:</label>
+                    <select id="sourceFilter">
+                        <option value="">All Sources</option>
+                        <option value="receipt">Receipts</option>
+                        <option value="manual">Manual Entries</option>
+                    </select>
+
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="pending">Pending Review</option>
+                    </select>
+
+                    <label for="financialYear">Financial Year:</label>
+                    <select id="financialYear">
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2022-2023">2022-2023</option>
+                    </select>
+                </div>
+                <button type="button" onclick="applyFilters()" class="filter-btn">Apply Filters</button>
+                <button type="button" onclick="resetFilters()" class="reset-btn">Reset</button>
+            </form>
+        </div>
+
+        <!-- Deductions Table -->
+    <table>
+            <thead>
+        <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+        </tr>
+            </thead>
+            <tbody id="deductionsTableBody">
+        <% deductions.forEach(deduction => { %>
+                <tr>
+                        <td><%= new Date(deduction.date).toLocaleDateString() %></td>
+                        <td><%= deduction.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></td>
+                    <td><%= deduction.description %></td>
+                    <td>$<%= deduction.amount.toFixed(2) %></td>
+                        <td><%= deduction.source === 'receipt' ? 'Receipt' : 'Manual Entry' %></td>
+                        <td><%= deduction.reviewed ? 'Reviewed' : 'Pending' %></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="edit-btn" onclick="editDeduction('<%= deduction.id %>')">Edit</button>
+                                <button class="delete-btn" onclick="deleteDeduction('<%= deduction.id %>')">Delete</button>
+                                <% if (deduction.imageFilename) { %>
+                                    <a href="/receipt-image/<%= deduction.imageFilename %>" target="_blank" class="view-btn">View Receipt</a>
+                        <% } %>
+                            </div>
+                    </td>
+                </tr>
+        <% }); %>
+            </tbody>
+    </table>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+            <!-- Pagination buttons will be added by JavaScript -->
+        </div>
+
+        <!-- Add Deduction Form -->
+        <div class="add-deduction-form">
+            <h3>Add Tax Deduction</h3>
+            <form id="addDeductionForm" onsubmit="return addDeduction(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" required>
+                        <span class="help-text">Date of the transaction</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vendor">Vendor/Business Name:</label>
+                        <input type="text" id="vendor" name="vendor" required>
+                        <span class="help-text">Name of the business or service provider</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <input type="text" id="description" name="description" required>
+                        <span class="help-text">Brief description of the purchase</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Amount (AUD):</label>
+                        <input type="number" id="amount" name="amount" step="0.01" required>
+                        <span class="help-text">Total amount including GST</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select a category</option>
+            <option value="office_supplies">Office Supplies</option>
+            <option value="travel">Travel</option>
+                            <option value="meals">Meals & Entertainment</option>
+                            <option value="equipment">Equipment & Tools</option>
+                            <option value="software">Software & Subscriptions</option>
+            <option value="utilities">Utilities</option>
+                            <option value="rent">Rent & Lease</option>
+            <option value="other">Other</option>
+        </select>
+                        <span class="help-text">Select the most appropriate category</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method:</label>
+                        <select id="paymentMethod" name="paymentMethod" required>
+                            <option value="">Select payment method</option>
+                            <option value="cash">Cash</option>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="debit_card">Debit Card</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="other">Other</option>
+        </select>
+                        <span class="help-text">How was the payment made</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="receiptImage" class="image-upload">
+                        <i class="fas fa-upload"></i>
+                        <div>Click to upload receipt image or drag and drop</div>
+                        <input type="file" id="receiptImage" name="receiptImage" accept="image/*,.pdf" style="display: none;">
+                        <span class="help-text">Supported formats: Images and PDF</span>
+                    </label>
+                    <div id="filePreview" style="margin-top: 10px;"></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">Add Deduction</button>
+            </form>
+        </div>
+
+        <!-- Add this before the compliance-note div -->
+        <div class="export-options">
+            <button onclick="exportToCSV()" class="export-btn">Export to CSV</button>
+            <button onclick="exportToPDF()" class="export-btn">Export to PDF</button>
+            <select id="exportTimeframe" class="export-btn" style="background-color: white; color: #333;">
+                <option value="all">All Time</option>
+                <option value="current">Current Financial Year</option>
+                <option value="last">Last Financial Year</option>
+                <option value="custom">Custom Range</option>
+            </select>
+            <input type="date" id="exportStartDate" style="display: none;">
+            <input type="date" id="exportEndDate" style="display: none;">
+        </div>
+
+        <div class="compliance-note">
+            <strong>Tax Compliance Note:</strong> 
+            Ensure all deductions comply with ATO guidelines and maintain proper documentation.
+            The standard tax rate of 32.5% is used for estimated tax savings calculations.
+            For specific tax advice, please consult a registered tax professional.
+            <br><br>
+            <a href="https://www.ato.gov.au/individuals/income-and-deductions/deductions-you-can-claim/" target="_blank">View ATO Deductions Guide</a>
+            <a href="https://www.ato.gov.au/api/public/content/c231b194-c584-403d-ae84-2dd105f6037a_TaxTimeToolkit_ITProfessional_pdf" target="_blank">View ATO IT Professional TaxTime Guide</a>
+        </div>
+
+        <div class="controls">
+            <a href="/dashboard" class="export-btn" style="background-color: #6c757d;">Back to Dashboard</a>
+        </div>
+</div>
+
+<script>
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let filteredDeductions = [];
+        
+        // Initialize with all deductions
+        filteredDeductions = JSON.parse('<%- JSON.stringify(deductions) %>');
+
+        // Add these variables at the top of your script
+        const isAdmin = true; // Since we're using checkAdmin middleware, this page is only accessible to admins
+        const currentUserId = '<%= locals.username %>'; // Use username from session
+
+        function displayDeductions() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const tableBody = document.getElementById('deductionsTableBody');
+            
+            // Clear existing rows
+            tableBody.innerHTML = '';
+            
+            // Filter out invalid deductions before displaying
+            const validDeductions = filteredDeductions.filter(deduction => {
+                return deduction && 
+                       deduction.amount && 
+                       deduction.amount > 0 && 
+                       deduction.date && 
+                       !isNaN(new Date(deduction.date).getTime());
+            });
+            
+            // Display current page's deductions
+            const pageDeductions = validDeductions.slice(startIndex, endIndex);
+            pageDeductions.forEach(deduction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(deduction.date).toLocaleDateString()}</td>
+                    <td>${deduction.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
+                    <td>${deduction.description}</td>
+                    <td>$${deduction.amount.toFixed(2)}</td>
+                    <td>${deduction.source === 'receipt' ? 'Receipt' : 'Manual Entry'}</td>
+                    <td>${deduction.reviewed ? 'Reviewed' : 'Pending'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="edit-btn" onclick="editDeduction('${deduction.id}')">Edit</button>
+                            <button class="delete-btn" onclick="deleteDeduction('${deduction.id}')">Delete</button>
+                            ${deduction.imageFilename ? `<a href="/receipt-image/${deduction.imageFilename}" target="_blank" class="view-btn">View Receipt</a>` : ''}
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredDeductions.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            // Previous button
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '←';
+            prevButton.disabled = currentPage === 1;
+            prevButton.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayDeductions();
+                }
+            };
+            pagination.appendChild(prevButton);
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.toggle('active', i === currentPage);
+                pageButton.onclick = () => {
+                    currentPage = i;
+                    displayDeductions();
+                };
+                pagination.appendChild(pageButton);
+            }
+            
+            // Next button
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '→';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    displayDeductions();
+                }
+            };
+            pagination.appendChild(nextButton);
+        }
+
+        function applyFilters() {
+            const category = document.getElementById('categoryFilter').value;
+            const source = document.getElementById('sourceFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const financialYear = document.getElementById('financialYear').value;
+            
+            // Filter deductions based on selected criteria
+            filteredDeductions = JSON.parse('<%- JSON.stringify(deductions) %>').filter(deduction => {
+                const categoryMatch = !category || deduction.category === category;
+                const sourceMatch = !source || deduction.source === source;
+                const statusMatch = !status || 
+                    (status === 'reviewed' && deduction.reviewed) ||
+                    (status === 'pending' && !deduction.reviewed);
+                
+                // Check if date falls within selected financial year
+                const [startYear, endYear] = financialYear.split('-');
+                const deductionDate = new Date(deduction.date);
+                const inFinancialYear = deductionDate >= new Date(`${startYear}-07-01`) && 
+                                      deductionDate <= new Date(`${endYear}-06-30`);
+                
+                return categoryMatch && sourceMatch && statusMatch && inFinancialYear;
+            });
+            
+            currentPage = 1;
+            displayDeductions();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterForm').reset();
+            filteredDeductions = JSON.parse('<%- JSON.stringify(deductions) %>');
+            currentPage = 1;
+            displayDeductions();
+        }
+
+        function editDeduction(id) {
+            const deduction = filteredDeductions.find(d => d.id === id);
+            if (!deduction) return;
+
+            // Populate form with deduction data
+            const form = document.getElementById('addDeductionForm');
+            form.date.value = deduction.date ? new Date(deduction.date).toISOString().split('T')[0] : '';
+            form.vendor.value = deduction.vendor || '';
+            form.description.value = deduction.description || '';
+            form.amount.value = deduction.amount || '';
+            form.category.value = deduction.category || '';
+            form.paymentMethod.value = deduction.paymentMethod || '';
+            
+            // Clear file preview if exists
+            document.getElementById('filePreview').innerHTML = '';
+            
+            // Change form to update mode
+            form.dataset.editId = id;
+            document.getElementById('submitBtn').textContent = 'Update Deduction';
+            
+            // Scroll to the form
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteDeduction(id) {
+            if (confirm('Are you sure you want to delete this deduction? This action cannot be undone.')) {
+                fetch(`/delete-deduction/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(async response => {
+                    const contentType = response.headers.get('content-type');
+                    if (!response.ok) {
+                        if (contentType && contentType.includes('application/json')) {
+                            return response.json().then(err => Promise.reject(err));
+                        } else {
+                            // If response is not JSON, get the text and create an error
+                            const text = await response.text();
+                            throw new Error('Server error. Please try again.');
+                        }
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        filteredDeductions = filteredDeductions.filter(d => d.id !== id);
+                        displayDeductions();
+        } else {
+                        throw new Error(data.error || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting deduction: ' + (error.message || 'Unknown error'));
+                });
+            }
+        }
+
+        async function addDeduction(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Validate amount and date
+            const amount = formData.get('amount');
+            const date = formData.get('date');
+            
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            if (!date) {
+                alert('Please select a date');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+            
+            try {
+                const isEdit = form.dataset.mode === 'edit';
+                const url = isEdit ? `/update-deduction/${form.dataset.editId}` : '/add-deduction';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save deduction');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update local data
+                    if (isEdit) {
+                        const index = filteredDeductions.findIndex(d => d.id === form.dataset.editId);
+                        if (index !== -1) {
+                            filteredDeductions[index] = result.deduction;
+                        }
+                    } else {
+                        filteredDeductions.unshift(result.deduction);
+                    }
+                    
+                    // Reset form and update display
+                    form.reset();
+                    form.dataset.mode = 'add';
+                    delete form.dataset.editId;
+                    submitBtn.textContent = 'Add Deduction';
+                    displayDeductions();
+                    
+                    // Clear file preview
+                    const previewContainer = document.getElementById('filePreview');
+                    if (previewContainer) {
+                        previewContainer.innerHTML = '';
+                    }
+                    
+                    alert(isEdit ? 'Deduction updated successfully' : 'Deduction added successfully');
+                } else {
+                    throw new Error('Failed to save deduction');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'An error occurred while saving the deduction');
+            } finally {
+                submitBtn.textContent = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function generateTempId() {
+            return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Initialize the display
+        displayDeductions();
+        
+        // Handle custom date range when "Custom Range" is selected
+        document.getElementById('exportTimeframe').addEventListener('change', function() {
+            const dateInputs = document.querySelectorAll('#filterForm input[type="date"]');
+            dateInputs.forEach(input => {
+                input.style.display = this.value === 'custom' ? 'inline' : 'none';
+            });
+        });
+
+        // Set initial date for the add deduction form
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Add file upload preview functionality
+        document.getElementById('receiptImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('filePreview');
+            
+            if (file) {
+                preview.innerHTML = `Selected file: ${file.name}`;
+            } else {
+                preview.innerHTML = '';
+            }
+        });
+
+        // Drag and drop functionality
+        const dropZone = document.querySelector('.image-upload');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.style.borderColor = '#007bff';
+        }
+
+        function unhighlight(e) {
+            dropZone.style.borderColor = '#ddd';
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            document.getElementById('receiptImage').files = files;
+            
+            if (files[0]) {
+                document.getElementById('filePreview').innerHTML = `Selected file: ${files[0].name}`;
+            }
+        }
+
+        function exportToCSV() {
+            const deductionsToExport = getFilteredDeductionsForExport();
+            let csv = 'Date,Category,Description,Amount,Source,Status,Receipt\n';
+            
+            deductionsToExport.forEach(d => {
+                const date = new Date(d.date).toLocaleDateString();
+                const category = d.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const description = d.description.replace(/,/g, ';');
+                const amount = d.amount.toFixed(2);
+                const source = d.source === 'receipt' ? 'Receipt' : 'Manual Entry';
+                const status = d.reviewed ? 'Reviewed' : 'Pending';
+                const receipt = d.imageFilename ? 'Yes' : 'No';
+                
+                csv += `${date},${category},"${description}",${amount},${source},${status},${receipt}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'deductions.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function getFilteredDeductionsForExport() {
+            const timeframe = document.getElementById('exportTimeframe').value;
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            
+            return filteredDeductions.filter(d => {
+                const deductionDate = new Date(d.date);
+                
+                switch(timeframe) {
+                    case 'current':
+                        const currentYear = new Date().getFullYear();
+                        const currentFYStart = new Date(currentYear, 6, 1); // July 1st
+                        const currentFYEnd = new Date(currentYear + 1, 5, 30); // June 30th
+                        return deductionDate >= currentFYStart && deductionDate <= currentFYEnd;
+                    
+                    case 'last':
+                        const lastYear = new Date().getFullYear() - 1;
+                        const lastFYStart = new Date(lastYear, 6, 1);
+                        const lastFYEnd = new Date(lastYear + 1, 5, 30);
+                        return deductionDate >= lastFYStart && deductionDate <= lastFYEnd;
+                    
+                    case 'custom':
+                        return (!startDate || deductionDate >= new Date(startDate)) && 
+                               (!endDate || deductionDate <= new Date(endDate));
+                    
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        function exportToPDF() {
+            const deductionsToExport = getFilteredDeductionsForExport();
+            fetch('/export-deductions-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ deductions: deductionsToExport })
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'deductions.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error exporting PDF:', error);
+                alert('Error exporting to PDF. Please try again.');
+            });
+        }
+
+        // Add event listener for export timeframe changes
+        document.getElementById('exportTimeframe').addEventListener('change', function() {
+            const customDateInputs = document.querySelectorAll('#exportStartDate, #exportEndDate');
+            customDateInputs.forEach(input => {
+                input.style.display = this.value === 'custom' ? 'inline' : 'none';
+            });
+    });
+</script>
+</body>
+</html>

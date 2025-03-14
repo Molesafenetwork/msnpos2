@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Receipt</title>
+    <style>
+        .content-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-container {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .image-upload {
+            border: 2px dashed #ddd;
+            padding: 20px;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .image-upload:hover {
+            border-color: #007bff;
+        }
+        .image-upload i {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .submit-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #5a6268;
+        }
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 4px;
+        }
+        .compliance-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 3px solid #007bff;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <h1>Add Receipt</h1>
+        <div class="form-container">
+            <form action="/add-receipt" method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" required>
+                        <span class="help-text">Date of the transaction</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vendor">Vendor/Business Name:</label>
+                        <input type="text" id="vendor" name="vendor" required>
+                        <span class="help-text">Name of the business or service provider</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <input type="text" id="description" name="description" required>
+                        <span class="help-text">Brief description of the purchase</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Amount (AUD):</label>
+                        <input type="number" id="amount" name="amount" step="0.01" required>
+                        <span class="help-text">Total amount including GST</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select a category</option>
+                            <option value="office_supplies">Office Supplies</option>
+                            <option value="travel">Travel</option>
+                            <option value="meals">Meals & Entertainment</option>
+                            <option value="equipment">Equipment & Tools</option>
+                            <option value="software">Software & Subscriptions</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="rent">Rent & Lease</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="help-text">Select the most appropriate category</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method:</label>
+                        <select id="paymentMethod" name="paymentMethod" required>
+                            <option value="">Select payment method</option>
+                            <option value="cash">Cash</option>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="debit_card">Debit Card</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="help-text">How was the payment made</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="receiptImage" class="image-upload">
+                        <i class="fas fa-upload"></i>
+                        <div>Click to upload receipt image or drag and drop</div>
+                        <input type="file" id="receiptImage" name="receiptImage" accept="image/*,.pdf" style="display: none;">
+                        <span class="help-text">Supported formats: Images and PDF</span>
+                    </label>
+                    <div id="filePreview" style="margin-top: 10px;"></div>
+                </div>
+
+                <button type="submit" class="submit-btn">Add Receipt</button>
+            </form>
+        </div>
+
+        <div class="compliance-note">
+            <strong>Note:</strong> Please ensure the receipt includes:
+            <ul>
+                <li>Business name and ABN</li>
+                <li>Date of purchase</li>
+                <li>GST amount (if applicable)</li>
+                <li>Itemized list of purchases</li>
+            </ul>
+            Keep original receipts for 5 years as per ATO requirements.
+        </div>
+
+        <a href="/dashboard" class="back-btn">Back to Dashboard</a>
+    </div>
+
+    <script>
+        // Initialize date input with today's date
+        document.getElementById('date').valueAsDate = new Date();
+
+        function validateForm() {
+            const amount = document.getElementById('amount').value;
+            if (isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('Please enter a valid amount greater than 0');
+                return false;
+            }
+            return true;
+        }
+
+        // File upload preview
+        document.getElementById('receiptImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('filePreview');
+            
+            if (file) {
+                preview.innerHTML = `Selected file: ${file.name}`;
+            } else {
+                preview.innerHTML = '';
+            }
+        });
+
+        // Drag and drop functionality
+        const dropZone = document.querySelector('.image-upload');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.style.borderColor = '#007bff';
+        }
+
+        function unhighlight(e) {
+            dropZone.style.borderColor = '#ddd';
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            document.getElementById('receiptImage').files = files;
+            
+            if (files[0]) {
+                document.getElementById('filePreview').innerHTML = `Selected file: ${files[0].name}`;
+            }
+        }
+    </script>
+</body>
+</html>

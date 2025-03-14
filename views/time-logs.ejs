@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Management</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="employee-management-container">
+        <div class="header-actions">
+            <h1>Employee Management</h1>
+            <a href="/dashboard" class="back-button">Back to Dashboard</a>
+        </div>
+
+        <div class="employee-grid">
+            <% employees.forEach(function(employee) { %>
+                <div class="employee-card" onclick="window.location.href='/employee-profile/<%= employee %>'">
+                    <div class="employee-avatar">
+                        <%= employee.charAt(0).toUpperCase() %>
+                    </div>
+                    <h3><%= employee %></h3>
+                    <div class="employee-stats">
+                        <span>Last Active: <%= lastActive[employee] || 'Never' %></span>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+    <script src="/js/employee-management.js"></script>
+</body>
+</html> 

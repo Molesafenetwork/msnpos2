@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'mole Safe Invoice Management' %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#007bff">
+    <link rel="apple-touch-icon" href="/images/invoice-icon-192.png">
+    <script src="/js/theme.js" defer></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        main {
+            flex: 1 0 auto;
+            padding: 20px;
+            padding-bottom: 60px; /* Adjust this value based on your footer height */
+        }
+        footer {
+            flex-shrink: 0;
+            padding: 10px;
+            background-color: var(--primary-color);
+            color: var(--light-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <% if (typeof username !== 'undefined') { %>
+                <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <% } %>
+        </nav>
+    </header>
+    <main>
+        <%- body %>
+    </main>
+    <footer>
+        <p>&copy; 2024 Mole Safe Networking - invoice management</p>
+    </footer>
+    <script>
+        // Apply the saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || 'default';
+                document.body.className = savedTheme !== 'default' ? savedTheme + '-theme' : '';
+            } catch (error) {
+                console.error('Error applying theme:', error);
+            }
+        });
+    </script>
+</body>
+</html>

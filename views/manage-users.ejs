@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <h3>
+    The server will need to restart all systems will go down when removing or adding users,  This is supposed to be automatic if you have issues contact your admin.
+  </h3>
+    <title>Manage Users</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="manage-users-container">
+        <h1>Manage Users</h1>
+        <div class="batch-actions">
+            <button onclick="toggleBatchDelete()" class="batch-btn">Batch Delete</button>
+            <button onclick="showBatchAddModal()" class="batch-btn">Batch Add</button>
+        </div>
+
+        <div id="userList" class="user-list"></div>
+        
+        <form id="addUserForm" class="add-user-form">
+            <h2>Add New User</h2>
+            <div class="form-group">
+                <label for="newUsername">Username:</label>
+                <input type="text" id="newUsername" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+                <label for="newPassword">Password:</label>
+                <input type="password" id="newPassword" placeholder="Enter password" required>
+            </div>
+            <button type="submit">Add User</button>
+        </form>
+
+        <!-- Batch Add Modal -->
+        <div id="batchAddModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeBatchAddModal()">&times;</span>
+                <h2>Batch Add Users</h2>
+                <textarea id="batchUsers" placeholder="Enter one user per line in format: username:password" rows="10"></textarea>
+                <button onclick="batchAddUsers()">Add Users</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let batchDeleteMode = false;
+        let selectedUsers = new Set();
+
+        async function loadUsers() {
+            try {
+                const response = await axios.get('/api/users');
+                const userList = document.getElementById('userList');
+                userList.innerHTML = response.data.map(user => `
+                    <div class="user-item ${selectedUsers.has(user) ? 'selected' : ''}">
+                        ${batchDeleteMode ? `
+                            <input type="checkbox" 
+                                   ${selectedUsers.has(user) ? 'checked' : ''} 
+                                   onchange="toggleUserSelection('${user}')"
+                                   ${user === 'admin' ? 'disabled' : ''}>
+                        ` : ''}
+                        <span>${user}</span>
+                        ${!batchDeleteMode && user !== 'admin' ? `
+                            <button onclick="deleteUser('${user}')" class="delete-btn">Delete</button>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Error loading users');
+            }
+        }
+
+        async function addUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+
+            if (!username || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                await axios.post('/api/users', { username, password });
+                alert('User added successfully');
+                await refreshServer();
+                document.getElementById('addUserForm').reset();
+            } catch (error) {
+                console.error('Error adding user:', error);
+                alert(error.response?.data?.error || 'Error adding user');
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Are you sure you want to delete user ${username}?`)) {
+                return;
+            }
+            try {
+                await axios.delete(`/api/users/${username}`);
+                alert('User deleted successfully');
+                await refreshServer();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+
+        function toggleBatchDelete() {
+            batchDeleteMode = !batchDeleteMode;
+            selectedUsers.clear();
+            loadUsers();
+            if (batchDeleteMode) {
+                document.querySelector('.batch-actions').innerHTML += `
+                    <button onclick="deleteBatchUsers()" class="batch-delete-btn">Delete Selected</button>
+                `;
+            } else {
+                document.querySelector('.batch-delete-btn')?.remove();
+            }
+        }
+
+        function toggleUserSelection(username) {
+            if (selectedUsers.has(username)) {
+                selectedUsers.delete(username);
+            } else {
+                selectedUsers.add(username);
+            }
+            loadUsers();
+        }
+
+        async function deleteBatchUsers() {
+            if (selectedUsers.size === 0) {
+                alert('Please select users to delete');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ${selectedUsers.size} users?`)) {
+                return;
+            }
+
+            try {
+                await Promise.all([...selectedUsers].map(username => 
+                    axios.delete(`/api/users/${username}`)
+                ));
+                alert('Users deleted successfully');
+                selectedUsers.clear();
+                batchDeleteMode = false;
+                await refreshServer();
+            } catch (error) {
+                console.error('Error deleting users:', error);
+                alert('Error deleting users');
+            }
+        }
+
+        function showBatchAddModal() {
+            document.getElementById('batchAddModal').style.display = 'block';
+        }
+
+        function closeBatchAddModal() {
+            document.getElementById('batchAddModal').style.display = 'none';
+        }
+
+        async function batchAddUsers() {
+            const usersText = document.getElementById('batchUsers').value;
+            const userLines = usersText.split('\n').filter(line => line.trim());
+
+            try {
+                await Promise.all(userLines.map(line => {
+                    const [username, password] = line.split(':');
+                    if (!username || !password) {
+                        throw new Error(`Invalid format in line: ${line}`);
+                    }
+                    return axios.post('/api/users', { username: username.trim(), password: password.trim() });
+                }));
+                alert('Users added successfully');
+                closeBatchAddModal();
+                await refreshServer();
+            } catch (error) {
+                console.error('Error adding users:', error);
+                alert('Error adding users. Please check the format.');
+            }
+        }
+
+        async function refreshServer() {
+            try {
+                await axios.post('/api/refresh-server');
+                await loadUsers();
+            } catch (error) {
+                console.error('Error refreshing server:', error);
+            }
+        }
+
+        document.getElementById('addUserForm').addEventListener('submit', addUser);
+        loadUsers();
+    </script>
+</body>
+</html>

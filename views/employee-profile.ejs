@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Profile - <%= employee %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="profile-container">
+        <div class="header-actions">
+            <h1>Employee Profile: <%= employee %></h1>
+            <a href="/time-logs" class="back-button">Back to Employees</a>
+        </div>
+
+        <div class="profile-grid">
+            <div class="profile-section shifts-section">
+                <h2>Recent Shifts</h2>
+                <div id="employeeShifts"></div>
+            </div>
+
+            <div class="profile-section stats-section">
+                <h2>Statistics</h2>
+                <div id="employeeStats">
+                    <div class="stat-card">
+                        <h3>Total Hours</h3>
+                        <p id="totalHours">Loading...</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Average Shift Length</h3>
+                        <p id="avgShiftLength">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section actions-section">
+                <h2>Actions</h2>
+                <button onclick="showAddShiftModal()">Add Manual Shift</button>
+                <button onclick="exportEmployeeData()">Export Data</button>
+                <button class="danger" onclick="resetEmployeeData()">Reset Data</button>
+            </div>
+        </div>
+
+        <!-- Add Shift Modal -->
+        <div id="addShiftModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Add Manual Time Entry</h2>
+                <form id="manualEntryForm" onsubmit="addManualShift(event)">
+                    <div class="form-group">
+                        <label for="clockInTime">Clock In Time:</label>
+                        <input type="datetime-local" id="clockInTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clockOutTime">Clock Out Time:</label>
+                        <input type="datetime-local" id="clockOutTime">
+                    </div>
+                    <button type="submit">Add Entry</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.employeeUsername = '<%= employee %>';
+    </script>
+    <script src="/js/employee-profile.js"></script>
+</body>
+</html> 

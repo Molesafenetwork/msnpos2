@@ -1,0 +1,93 @@
+<h1>Income Summary for <%= financialYear %></h1>
+<div class="content-wrapper">
+    <table>
+        <tr>
+            <th>Item</th>
+            <th>Amount (AUD)</th>
+        </tr>
+        <tr class="section">
+            <td colspan="2">Revenue</td>
+        </tr>
+        <tr>
+            <td>Total Revenue</td>
+            <td>$<%= totalRevenue.toFixed(2) %></td>
+        </tr>
+        <tr class="section">
+            <td colspan="2">Business Losses</td>
+        </tr>
+        <form action="/update-business-losses" method="POST">
+            <% for (const [key, value] of Object.entries(businessLosses)) { %>
+                <tr>
+                    <td><%= key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()) %></td>
+                    <td>$<input type="number" name="<%= key %>" value="<%= value %>" step="0.01"></td>
+                </tr>
+            <% } %>
+            <tr>
+                <td colspan="2"><button type="submit">Update Business Losses</button></td>
+            </tr>
+        </form>
+        <tr class="section">
+            <td colspan="2">Deductions</td>
+        </tr>
+        <% for (const [category, amount] of Object.entries(deductions)) { %>
+            <tr>
+                <td><%= category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></td>
+                <td>$<%= amount.toFixed(2) %></td>
+            </tr>
+        <% } %>
+        <tr>
+            <td><strong>Total Deductions</strong></td>
+            <td><strong>$<%= Object.values(deductions).reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0).toFixed(2) %></strong></td>
+        </tr>
+        <tr class="section">
+            <td colspan="2">Tax Calculations</td>
+        </tr>
+        <tr>
+            <td>Taxable Income</td>
+            <td>$<%= taxableIncome.toFixed(2) %></td>
+        </tr>
+        <tr>
+            <td>Tax-Free Threshold</td>
+            <td>$<%= typeof taxConfig.taxFreeThreshold === 'number' ? taxConfig.taxFreeThreshold.toFixed(2) : taxConfig.taxFreeThreshold %></td>
+        </tr>
+        <tr>
+            <td>Income Tax</td>
+            <td>$<%= incomeTax.toFixed(2) %></td>
+        </tr>
+        <tr>
+            <td>Medicare Levy</td>
+            <td>$<%= medicareLevy.toFixed(2) %></td>
+        </tr>
+        <tr>
+            <td><strong>Total Tax</strong></td>
+            <td><strong>$<%= totalTax.toFixed(2) %></strong></td>
+        </tr>
+        <tr>
+            <td><strong>Net Income</strong></td>
+            <td><strong>$<%= netIncome.toFixed(2) %></strong></td>
+        </tr>
+    </table>
+    <p>Note: This is a simplified calculation and should not be used for official tax purposes. Please consult a qualified tax professional for accurate tax advice.</p>
+    <a href="/dashboard">Back to Dashboard</a>
+</div>
+
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 800px;
+        margin: 20px auto;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .section {
+        margin-top: 20px;
+        font-weight: bold;
+    }
+</style>

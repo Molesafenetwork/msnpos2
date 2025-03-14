@@ -1,0 +1,426 @@
+<h1>Settings</h1>
+
+<form id="settingsForm" action="/update-settings" method="POST">
+    <h2>Theme Settings</h2>
+    <select id="themeSelect" name="theme">
+        <option value="default">Default</option>
+        <option value="dark">Dark Mode</option>
+        <option value="cherry-terminal">Cherry Terminal</option>
+        <option value="ocean-breeze">Ocean Breeze</option>
+        <option value="forest-green">Forest Green</option>
+        <option value="sunset-orange">Sunset Orange</option>
+        <option value="lavender-dreams">Lavender Dreams</option>
+        <option value="cyberpunk-neon">Cyberpunk Neon</option>
+        <option value="pastel-paradise">Pastel Paradise</option>
+        <option value="monochrome-gray">Monochrome Gray</option>
+        <option value="coffee-shop">Coffee Shop</option>
+        <option value="neon-lights">Neon Lights</option>
+        <option value="retro-arcade">Retro Arcade</option>
+        <option value="autumn-leaves">Autumn Leaves</option>
+        <option value="winter-frost">Winter Frost</option>
+        <option value="tropical-paradise">Tropical Paradise</option>
+    </select>
+<%/*
+ <h2>POS Terminal Layout</h2> 
+    <select id="posLayoutSelect" name="posLayout">
+        <h3>Standard Layouts</h3>
+        <option value="default">Default (Side Cart)</option>
+        <option value="bottom-cart">Bottom Cart</option>
+        <option value="compact">Compact View</option>
+        <option value="grid-focus">Grid Focus</option>
+        <option value="categories-top">Categories on Top</option>
+        
+        <optgroup label="Device Optimized">
+            <option value="mobile-portrait">Mobile Portrait</option>
+            <option value="tablet">Tablet Optimized</option>
+            <option value="desktop-compact">Desktop Compact</option>
+            <option value="large-monitor">Large Monitor</option>
+            <option value="touch-kiosk">Touch Screen Kiosk</option>
+        </optgroup>
+    </select> 
+*/%>
+
+    <div class="layout-description"></div>
+
+    <h2>Tax Settings</h2>
+    <label for="financialYear">Financial Year:</label>
+    <input type="text" id="financialYear" name="financialYear" value="<%= taxConfig.financialYear %>" required>
+
+    <label for="taxFreeThreshold">Tax-Free Threshold:</label>
+    <input type="number" id="taxFreeThreshold" name="taxFreeThreshold" value="<%= parseInt(taxConfig.taxFreeThreshold) %>" required>
+    
+    <h3>Medicare Levy Settings</h3>
+    <label for="medicareLevyMin">Medicare Levy Minimum Threshold:</label>
+    <input type="number" id="medicareLevyMin" name="medicareLevyMin" value="<%= taxConfig.medicareLevySettings?.min ?? 0 %>" min="0" required>
+    
+    <label for="medicareLevyMax">Medicare Levy Shade-in Maximum:</label>
+    <input type="number" id="medicareLevyMax" name="medicareLevyMax" value="<%= taxConfig.medicareLevySettings?.max ?? 0 %>" min="0" required>
+    
+    <label for="medicareLevyRate">Medicare Levy Rate (%):</label>
+    <input type="number" id="medicareLevyRate" name="medicareLevyRate" value="<%= ((taxConfig.medicareLevySettings?.rate ?? 0) * 100).toFixed(1) %>" step="0.1" min="0" max="100" required>
+    
+    <h3>Tax Brackets</h3>
+    <p>Enter the income thresholds and tax rates for each bracket.</p>
+    
+    <div id="taxBrackets">
+    <% taxConfig.taxBrackets.forEach((bracket, index) => { %>
+        <div class="tax-bracket" data-index="<%= index %>">
+            <h4>Bracket <%= index + 1 %></h4>
+            <label>
+                Min Income:
+                <input type="number" name="taxBrackets[<%= index %>].min" value="<%= bracket.min %>" required>
+            </label>
+            <label>
+                Max Income:
+                <input type="number" name="taxBrackets[<%= index %>].max" value="<%= bracket.max === 1 ? '' : bracket.max %>" placeholder="Leave empty for no limit" required>
+            </label>
+            <label>
+                Tax Rate (%):
+                <input type="number" step="0.1" name="taxBrackets[<%= index %>].rate" value="<%= (bracket.rate * 100).toFixed(1) %>" required>
+            </label>
+            <p class="explanation">
+                For income between $<%= bracket.min.toLocaleString() %> and <%= bracket.max === 1 ? 'no limit' : '$' + bracket.max.toLocaleString() %>, 
+                the tax rate is <%= (bracket.rate * 100).toFixed(1) %>%
+            </p>
+            <% if (index > 0) { %>
+                <button type="button" class="remove-bracket" onclick="removeBracket(<%- index %>)">Remove Bracket</button>
+            <% } %>
+        </div>
+    <% }); %>
+    </div>
+
+    <button type="button" onclick="addTaxBracket()">Add Tax Bracket</button>
+    <button type="submit">Save Settings</button>
+</form>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    h1, h2, h3 {
+        color: #333;
+    }
+    
+    form {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    label {
+        display: block;
+        margin-top: 10px;
+    }
+    
+    input, select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+    }
+    
+    button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+    
+    button:hover {
+        background-color: #0056b3;
+    }
+    
+    .tax-bracket {
+        background: #f5f5f5;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    
+    .tax-bracket label {
+        display: block;
+        margin: 10px 0;
+    }
+    
+    .tax-bracket input {
+        width: 200px;
+    }
+    
+    .explanation {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .remove-bracket {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    
+    button[type="submit"] {
+        margin-top: 20px;
+        background: #28a745;
+    }
+
+    /* Theme: Dark Mode */
+    body.dark-theme {
+        background-color: #222;
+        color: #fff;
+    }
+    
+    body.dark-theme h1, body.dark-theme h2, body.dark-theme h3 {
+        color: #fff;
+    }
+    
+    body.dark-theme input, body.dark-theme select {
+        background-color: #444;
+        color: #fff;
+        border: 1px solid #666;
+    }
+    
+    /* Theme: Cherry Terminal */
+    body.cherry-terminal-theme {
+        background-color: #1a0505;
+        color: #ff3333;
+        font-family: 'Courier New', monospace;
+    }
+    
+    body.cherry-terminal-theme input, body.cherry-terminal-theme select {
+        background-color: #2a0a0a;
+        color: #ff6666;
+        border: 1px solid #ff3333;
+    }
+    
+    body.cherry-terminal-theme button {
+        background-color: #ff3333;
+        color: #1a0505;
+    }
+    
+    /* Theme: Ocean Breeze */
+    body.ocean-breeze-theme {
+        background-color: #e6f3ff;
+        color: #00334e;
+    }
+    
+    body.ocean-breeze-theme input, body.ocean-breeze-theme select {
+        background-color: #ffffff;
+        color: #00334e;
+        border: 1px solid #7fdbff;
+    }
+    
+    body.ocean-breeze-theme button {
+        background-color: #0074D9;
+    }
+
+    /* Add styles for the new POS layout selector */
+    #posLayoutSelect {
+        margin-bottom: 20px;
+        padding: 8px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    /* Preview images for layouts */
+    .layout-preview {
+        display: none;
+        max-width: 300px;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    #posLayoutSelect:focus + .layout-preview {
+        display: block;
+    }
+
+    .layout-description {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+        font-style: italic;
+        color: #666;
+        display: none;
+    }
+
+    optgroup {
+        font-weight: bold;
+        color: #666;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeSelect = document.getElementById('themeSelect');
+        const body = document.body;
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'default';
+        themeSelect.value = savedTheme;
+        applyTheme(savedTheme);
+        
+        themeSelect.addEventListener('change', function() {
+            const selectedTheme = this.value;
+            applyTheme(selectedTheme);
+            localStorage.setItem('theme', selectedTheme);
+        });
+        
+        function applyTheme(theme) {
+            body.className = ''; // Reset classes
+            if (theme !== 'default') {
+                body.classList.add(theme + '-theme');
+            }
+        }
+        
+        // Handle form submission
+        const form = document.getElementById('settingsForm');
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                // Gather form data
+                const formData = new FormData(form);
+                const data = {
+                    financialYear: formData.get('financialYear'),
+                    taxFreeThreshold: parseInt(formData.get('taxFreeThreshold')),
+                    medicareLevySettings: {
+                        min: parseInt(formData.get('medicareLevyMin')),
+                        max: parseInt(formData.get('medicareLevyMax')),
+                        rate: parseFloat(formData.get('medicareLevyRate')) / 100
+                    },
+                    taxBrackets: []
+                };
+                
+                // Process tax brackets
+                const bracketDivs = document.querySelectorAll('.tax-bracket');
+                bracketDivs.forEach((div, index) => {
+                    const min = parseInt(formData.get(`taxBrackets[${index}].min`));
+                    let max = formData.get(`taxBrackets[${index}].max`);
+                    max = max === '' ? Infinity : parseInt(max);
+                    const rate = parseFloat(formData.get(`taxBrackets[${index}].rate`)) / 100;
+                    
+                    data.taxBrackets.push({
+                        min: min,
+                        max: max === Infinity ? 1 : max, // Store Infinity as 1 for compatibility
+                        rate: rate
+                    });
+                });
+
+                const response = await fetch('/update-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Settings saved successfully!');
+                    window.location.reload();
+                } else {
+                    throw new Error(result.error || 'Failed to save settings');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving settings: ' + error.message);
+            }
+        });
+
+        // Add POS Layout handling
+        const posLayoutSelect = document.getElementById('posLayoutSelect');
+        
+        // Load saved POS layout
+        const savedPosLayout = localStorage.getItem('posLayout') || 'default';
+        posLayoutSelect.value = savedPosLayout;
+        
+        posLayoutSelect.addEventListener('change', function() {
+            const selectedLayout = this.value;
+            localStorage.setItem('posLayout', selectedLayout);
+            
+            // Send to server to save in user preferences
+            fetch('/update-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    posLayout: selectedLayout
+                })
+            });
+        });
+
+        // Add layout descriptions
+        const layoutDescriptions = {
+            'mobile-portrait': 'Optimized for mobile phones with a sliding cart panel from bottom',
+            'tablet': 'Perfect for iPad and tablets with touch-friendly controls',
+            'desktop-compact': 'Efficient layout for standard desktop monitors',
+            'large-monitor': 'Maximized view for large displays',
+            'touch-kiosk': 'Large buttons and text for touch screen kiosks'
+        };
+
+        const layoutDescription = document.querySelector('.layout-description');
+
+        posLayoutSelect.addEventListener('change', function() {
+            const description = layoutDescriptions[this.value];
+            if (description) {
+                layoutDescription.textContent = description;
+                layoutDescription.style.display = 'block';
+            } else {
+                layoutDescription.style.display = 'none';
+            }
+        });
+    });
+
+    function addTaxBracket() {
+        const bracketsDiv = document.getElementById('taxBrackets');
+        const newIndex = bracketsDiv.children.length;
+        
+        const newBracket = document.createElement('div');
+        newBracket.className = 'tax-bracket';
+        newBracket.dataset.index = newIndex;
+        
+        newBracket.innerHTML = `
+            <h4>Bracket ${newIndex + 1}</h4>
+            <label>
+                Min Income:
+                <input type="number" name="taxBrackets[${newIndex}].min" required>
+            </label>
+            <label>
+                Max Income:
+                <input type="number" name="taxBrackets[${newIndex}].max" placeholder="Leave empty for no limit">
+            </label>
+            <label>
+                Tax Rate (%):
+                <input type="number" step="0.1" name="taxBrackets[${newIndex}].rate" required>
+            </label>
+            <button type="button" class="remove-bracket" onclick="removeBracket(${newIndex})">Remove Bracket</button>
+        `;
+        
+        bracketsDiv.appendChild(newBracket);
+    }
+
+    function removeBracket(index) {
+        const bracket = document.querySelector(`.tax-bracket[data-index="${index}"]`);
+        if (bracket && index > 0) { // Don't allow removing the first bracket
+            bracket.remove();
+            // Renumber remaining brackets
+            document.querySelectorAll('.tax-bracket').forEach((div, i) => {
+                div.dataset.index = i;
+                div.querySelector('h4').textContent = `Bracket ${i + 1}`;
+            });
+        }
+    }
+</script>
