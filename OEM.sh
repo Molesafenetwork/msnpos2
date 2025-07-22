@@ -27,7 +27,7 @@ echo "posuser:posuser123" | sudo chpasswd
 # Clone your POS repository
 echo "Cloning POS application..."
 cd /home/posuser
-sudo -u posuser git clone YOUR_REPO_URL pos-system
+sudo -u posuser git clone https://github.com/Molesafenetwork/msnpos2.git pos-system
 cd pos-system
 
 # Install Node.js dependencies
@@ -56,13 +56,23 @@ EOF
 sudo chmod +x /usr/local/bin/edit-env
 sudo chmod +x /usr/local/bin/setup-tailnet
 
-# Create X11 startup script
+# Create X11 startup script with display optimization
 sudo tee /home/posuser/.xinitrc << 'EOF'
 #!/bin/bash
+# Disable screen blanking and power management
+xset s off
+xset s noblank
+xset -dpms
+
 # Hide cursor after 1 second of inactivity
 unclutter -idle 1 &
 
-# Start Chromium in kiosk mode
+# Wait for POS server to be ready
+while ! curl -s http://localhost:3000 > /dev/null; do
+  sleep 1
+done
+
+# Start Chromium in kiosk mode pointing to your POS
 chromium-browser \
   --kiosk \
   --no-first-run \
@@ -70,8 +80,12 @@ chromium-browser \
   --disable-infobars \
   --disable-translate \
   --disable-features=TranslateUI \
+  --disable-dev-shm-usage \
+  --no-sandbox \
   --disk-cache-dir=/tmp \
   --aggressive-cache-discard \
+  --start-maximized \
+  --window-position=0,0 \
   http://localhost:3000
 EOF
 
@@ -179,4 +193,4 @@ echo "   - edit-env: Edit .env file"
 echo "   - setup-tailnet: Install Tailscale"
 echo "   - restart-pos: Restart POS system"
 echo ""
-echo "Replace 'YOUR_REPO_URL' with your actual Git repository URL"
+echo "Replace 'https://github.com/Molesafenetwork/msnpos2.git' with your actual Git repository URL if custom"
