@@ -1,6 +1,6 @@
 #!/bin/bash
 # Orange Pi 4 LTS POS System Setup Script
-# Run with: curl -sSL https://your-repo.com/setup.sh | bash
+# Run with: curl -sSL https://github.com/Molesafenetwork/OEM.sh | bash
 
 set -e
 
