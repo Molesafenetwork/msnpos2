@@ -2,7 +2,7 @@
 # Armbian Orange Pi POS System Setup Script
 # Compatible with both Zero 3 and 4 LTS
 # Use with Armbian Minimal (Jammy or Bookworm)
-
+# Run with: curl -sSL https://github.com/Molesafenetwork/OEMPROD2.sh | bash
 set -e
 
 echo "=== Armbian Orange Pi POS System Setup ==="
