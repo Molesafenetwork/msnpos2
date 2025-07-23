@@ -56,17 +56,14 @@ else
     # Create new .env with defaults
     sudo -u posuser tee .env << EOF
 # POS System Configuration
+MOLE_SAFE_USERS=Admin1234#:Admin1234#,worker1:worker1!
+SESSION_SECRET=123485358953
 ENCRYPTION_KEY=$CRYPTO_KEY
-PORT=3000
-NODE_ENV=production
-PDF_STORAGE_PATH=./public/.data
-STORE_NAME=MSN POS Terminal
-CURRENCY=AUD
-TAX_RATE=0.10
-RECEIPT_PRINTER=false
-CASH_DRAWER=false
-BARCODE_SCANNER=true
-DEBUG_MODE=false
+COMPANY_NAME=Mole Safe Network
+COMPANY_ADDRESS=123 random road
+COMPANY_PHONE=61756666665
+COMPANY_EMAIL=support@mole-safe.net
+COMPANY_ABN=333333333
 EOF
 fi
 
