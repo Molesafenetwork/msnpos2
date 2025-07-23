@@ -1,6 +1,7 @@
 #!/bin/bash
 # Orange Pi Zero 3 Optimized POS System Setup Script
 # Lightweight version for 1GB RAM constraint
+# Run with: curl -sSL https://github.com/Molesafenetwork/OOEMP3.sh | bash
 
 set -e
 
