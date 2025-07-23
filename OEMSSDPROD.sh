@@ -32,9 +32,49 @@ cd /home/posuser
 sudo -u posuser git clone https://github.com/Molesafenetwork/msnpos2.git pos-system
 cd pos-system
 
-# Install Node.js dependencies
-echo "Installing Node.js dependencies..."
+# Install Node.js dependencies and setup crypto key
+echo "Installing Node.js dependencies and generating crypto key..."
 sudo -u posuser npm install
+sudo -u posuser npm install crypto-js
+
+# Generate encryption key and update .env
+echo "Generating encryption key..."
+cd /home/posuser/pos-system
+
+# Create .data directory for PDFs (matching your app structure)
+sudo -u posuser mkdir -p public/.data
+sudo chmod 755 public/.data
+
+# Generate crypto key using the same method as your instructions
+CRYPTO_KEY=$(sudo -u posuser node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());")
+
+# Update .env file with generated key and default settings
+if [ -f .env ]; then
+    # Update existing .env
+    sudo -u posuser sed -i "s/ENCRYPTION_KEY=.*/ENCRYPTION_KEY=$CRYPTO_KEY/" .env
+else
+    # Create new .env with defaults
+    sudo -u posuser tee .env << EOF
+# POS System Configuration
+ENCRYPTION_KEY=$CRYPTO_KEY
+PORT=3000
+NODE_ENV=production
+PDF_STORAGE_PATH=./public/.data
+STORE_NAME=MSN POS Terminal
+CURRENCY=AUD
+TAX_RATE=0.10
+RECEIPT_PRINTER=false
+CASH_DRAWER=false
+BARCODE_SCANNER=true
+DEBUG_MODE=false
+EOF
+fi
+
+# Log the crypto generation command to bash_history for reference
+echo "node -e \"const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());\"" >> /home/posuser/.bash_history
+
+echo "Encryption key generated and saved to .env"
+echo "PDF storage configured at: ./public/.data"
 
 # Create custom commands directory
 echo "Setting up custom commands..."
@@ -54,9 +94,57 @@ curl -fsSL https://tailscale.com/install.sh | sh
 echo "Run 'sudo tailscale up' to authenticate"
 EOF
 
+# Create generate-key command
+sudo tee /usr/local/bin/generate-key << 'EOF'
+#!/bin/bash
+cd /home/posuser/pos-system
+echo "Generating new encryption key..."
+NEW_KEY=$(node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());")
+echo "New encryption key: $NEW_KEY"
+echo "To use this key, run: edit-env"
+echo "Then update ENCRYPTION_KEY=$NEW_KEY"
+EOF
+
+# Create check-env command
+sudo tee /usr/local/bin/check-env << 'EOF'
+#!/bin/bash
+echo "Current .env configuration:"
+cat /home/posuser/pos-system/.env
+EOF
+
+# Create pdf-storage command
+sudo tee /usr/local/bin/pdf-storage << 'EOF'
+#!/bin/bash
+echo "PDF storage directory contents:"
+ls -la /home/posuser/pos-system/public/.data/
+echo ""
+echo "Storage usage:"
+du -sh /home/posuser/pos-system/public/.data/
+EOF
+
+# Create pos-logs command
+sudo tee /usr/local/bin/pos-logs << 'EOF'
+#!/bin/bash
+echo "POS System logs (press Ctrl+C to exit):"
+journalctl -u pos-system -f
+EOF
+
+# Create restart-pos command
+sudo tee /usr/local/bin/restart-pos << 'EOF'
+#!/bin/bash
+echo "Restarting POS system and display..."
+sudo systemctl restart pos-system pos-kiosk
+echo "POS system restarted"
+EOF
+
 # Make commands executable
 sudo chmod +x /usr/local/bin/edit-env
 sudo chmod +x /usr/local/bin/setup-tailnet
+sudo chmod +x /usr/local/bin/generate-key
+sudo chmod +x /usr/local/bin/check-env
+sudo chmod +x /usr/local/bin/pdf-storage
+sudo chmod +x /usr/local/bin/pos-logs
+sudo chmod +x /usr/local/bin/restart-pos
 
 # Create X11 startup script with display optimization
 sudo tee /home/posuser/.xinitrc << 'EOF'
@@ -138,6 +226,9 @@ alias edit-env='nano /home/posuser/pos-system/.env && sudo systemctl restart pos
 alias setup-tailnet='curl -fsSL https://tailscale.com/install.sh | sh && echo "Run: sudo tailscale up"'
 alias restart-pos='sudo systemctl restart pos-system pos-kiosk'
 alias pos-logs='journalctl -u pos-system -f'
+alias generate-key='cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(\"New key:\", key.toString());"'
+alias check-env='cat /home/posuser/pos-system/.env'
+alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
 
 # Terminal customization
 PS1='\[\033[01;32m\]POS-ADMIN\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
@@ -145,9 +236,12 @@ PS1='\[\033[01;32m\]POS-ADMIN\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 echo "POS Admin Terminal"
 echo "Commands available:"
 echo "  edit-env      - Edit environment variables"
-echo "  setup-tailnet - Install and setup Tailscale"
+echo "  setup-tailnet - Install and setup Tailscale" 
 echo "  restart-pos   - Restart POS services"
 echo "  pos-logs      - View POS application logs"
+echo "  generate-key  - Generate new encryption key"
+echo "  check-env     - View current .env settings"
+echo "  pdf-storage   - Check PDF storage directory"
 EOF
 
 # Set permissions
@@ -194,5 +288,7 @@ echo "4. Available admin commands:"
 echo "   - edit-env: Edit .env file"
 echo "   - setup-tailnet: Install Tailscale"
 echo "   - restart-pos: Restart POS system"
+echo "   - generate-key: Generate new encryption key"
+echo "   - check-env: View current .env settings"
+echo "   - pdf-storage: Check PDF storage directory"
 echo ""
-echo "Replace 'https://github.com/Molesafenetwork/msnpos2.git' with your actual Git repository URL if different"
