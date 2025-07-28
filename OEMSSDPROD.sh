@@ -37,24 +37,15 @@ echo "Installing Node.js dependencies and generating crypto key..."
 sudo -u posuser npm install
 sudo -u posuser npm install crypto-js
 
-# Generate encryption key and update .env
-echo "Generating encryption key..."
+ENV_PATH=".env"
 cd /home/posuser/pos-system
 
-# Create .data directory for PDFs (matching your app structure)
-sudo -u posuser mkdir -p public/.data
-sudo chmod 755 public/.data
-
-# Generate crypto key using the same method as your instructions
+# Generate crypto key
 CRYPTO_KEY=$(sudo -u posuser node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());")
 
-# Update .env file with generated key and default settings
-if [ -f .env ]; then
-    # Update existing .env
-    sudo -u posuser sed -i "s/ENCRYPTION_KEY=.*/ENCRYPTION_KEY=$CRYPTO_KEY/" .env
-else
-    # Create new .env with defaults
-    sudo -u posuser tee .env << EOF
+if [ ! -f "$ENV_PATH" ]; then
+    echo "Creating new .env with generated encryption key..."
+    sudo -u posuser tee "$ENV_PATH" <<EOF
 # POS System Configuration
 MOLE_SAFE_USERS=Admin1234#:Admin1234#,worker1:worker1!
 SESSION_SECRET=123485358953
@@ -65,12 +56,26 @@ COMPANY_PHONE=61756666665
 COMPANY_EMAIL=support@mole-safe.net
 COMPANY_ABN=333333333
 EOF
+
+else
+    echo ".env exists, checking for placeholder..."
+    if grep -q 'ENCRYPTION_KEY=\$CRYPTO_KEY' "$ENV_PATH"; then
+        echo "Found placeholder. Replacing with generated key..."
+        sudo -u posuser sed -i "s|ENCRYPTION_KEY=\$CRYPTO_KEY|ENCRYPTION_KEY=$CRYPTO_KEY|" "$ENV_PATH"
+    else
+        echo "ENCRYPTION_KEY already set. Skipping key replacement."
+    fi
 fi
 
-# Log the crypto generation command to bash_history for reference
+
+# Log keygen command to history
 echo "node -e \"const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());\"" >> /home/posuser/.bash_history
 
-echo "Encryption key generated and saved to .env"
+echo "✅ Encryption key process completed."
+# Ensure .data directory exists
+echo "Making sure .data directory exists"
+sudo -u posuser mkdir -p public/.data
+sudo chmod 755 public/.data
 echo "PDF storage configured at: ./public/.data"
 
 # Create custom commands directory
