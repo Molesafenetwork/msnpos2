@@ -13,11 +13,11 @@ A comprehensive tax management system for handling invoices, deductions, receipt
 
 Help keep this project alive and maintained:
 
-[![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](bitcoin:YOUR_BTC_ADDRESS)
+[![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](bitcoin:bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne)
 [![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](litecoin:YOUR_LTC_ADDRESS)
 [![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](monero:YOUR_XMR_ADDRESS)
 
-**Bitcoin:** `YOUR_BTC_ADDRESS_HERE`  
+**Bitcoin:** `bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne`  
 **Litecoin:** `YOUR_LTC_ADDRESS_HERE`  
 **Monero:** `YOUR_XMR_ADDRESS_HERE`
 
