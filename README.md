@@ -14,14 +14,28 @@ A comprehensive tax management system for handling invoices, deductions, receipt
 
 Help keep me and this project stay alive and maintained:
 
-[![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](https://trocador.app/?ref=6GZ3qkFXVy&to=bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne)
-[![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](https://trocador.app/?ref=6GZ3qkFXVy&to=ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l)
-[![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](https://trocador.app/?ref=6GZ3qkFXVy&to=8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9)
+### Direct Crypto Donations
 
-**Bitcoin:** `bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne`  
-**Litecoin:** `ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l`  
-**Monero:** `8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9`
+**Bitcoin (BTC)**
+```
+bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne
+```
+[![Donate Bitcoin](https://img.shields.io/badge/Copy_BTC_Address-orange.svg?logo=bitcoin)](javascript:navigator.clipboard.writeText('bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne'))
 
+**Litecoin (LTC)**
+```
+ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l
+```
+[![Donate Litecoin](https://img.shields.io/badge/Copy_LTC_Address-lightgrey.svg?logo=litecoin)](javascript:navigator.clipboard.writeText('ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l'))
+
+**Monero (XMR)**
+```
+8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9
+```
+[![Donate Monero](https://img.shields.io/badge/Copy_XMR_Address-orange.svg?logo=monero)](javascript:navigator.clipboard.writeText('8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9'))
+
+### Need to Buy Crypto First?
+If you don't have crypto yet, you can buy and exchange on [Trocador](https://trocador.app/?ref=6GZ3qkFXVy) and then send to the addresses above.
 ---
 
 ## 📞 Contact & Support
