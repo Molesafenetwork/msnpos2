@@ -11,15 +11,15 @@ A comprehensive tax management system for handling invoices, deductions, receipt
 
 ## 💰 Support Development
 
-Help keep this project alive and maintained:
+Help keep me and this project stay alive and maintained:
 
 [![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](bitcoin:bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne)
-[![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](litecoin:YOUR_LTC_ADDRESS)
-[![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](monero:YOUR_XMR_ADDRESS)
+[![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](litecoin:ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l)
+[![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](monero:8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9)
 
 **Bitcoin:** `bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne`  
-**Litecoin:** `YOUR_LTC_ADDRESS_HERE`  
-**Monero:** `YOUR_XMR_ADDRESS_HERE`
+**Litecoin:** `ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l`  
+**Monero:** `8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9`
 
 ---
 
