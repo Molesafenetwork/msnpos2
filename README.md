@@ -1,4 +1,5 @@
-# MSN Tax Management System - Minding Your Buisness
+# MSN Tax Management System 
+# Minding Your Buisness EST 2022
 
 [![Version](https://img.shields.io/badge/version-1.9.4-blue.svg)](https://github.com/yourusername/msn-tax-management)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -13,9 +14,9 @@ A comprehensive tax management system for handling invoices, deductions, receipt
 
 Help keep me and this project stay alive and maintained:
 
-[![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](bitcoin:bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne)
-[![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](litecoin:ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l)
-[![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](monero:8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9)
+[![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](https://anonpay.org/donate?address=bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne&currency=BTC)
+[![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](https://anonpay.org/donate?address=ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l&currency=LTC)
+[![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](https://anonpay.org/donate?address=8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9&currency=XMR)
 
 **Bitcoin:** `bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne`  
 **Litecoin:** `ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l`  
