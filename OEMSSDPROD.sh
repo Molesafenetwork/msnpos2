@@ -1,7 +1,7 @@
 #!/bin/bash
 # Orange Pi 3B POS System Setup Script
 # Compatible with RK3566 chipset and Armbian
-# Run with: curl -sSL https://your-repo.com/setup.sh | bash
+# Run with: curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
 
 set -e
 
