@@ -10,6 +10,8 @@ A comprehensive tax management system for handling invoices, deductions, receipt
 
 This version is OPEN SOUCE since its made by one person which is me. I encourage people heavily to make modifications of this codebase so 1. it suits your needs & other peoples needs 2. ultimatly works better. theirs lots that could change like the need for a proper database eventually, better touchscreen support, more & better admin commands, maybe make it into a react native app and overhaul the design entirely. if you make a change you thinks amazing contact the admin@mole-safe.net or owner@mole-safe.net and use the subject: "CODEBASE AMAZING CHANGE" using this subject word for word will foward it to my personal emails to make sure its read i dont mind rewarding people that put in hard work and do amazing things i will still review every merge request to the extreme you should explain in bullet points what you've changed and how it works if needed.
 
+let this message serve as written permision for all to modify & merge this software while you CANNOT AND SHOULDNT DISRIBUTE OR SELL THIS SOFTWARE IN ANY FORM making other repos with modified code for distribution/sale is STRICTLY PROHIBITED AND YOU WILL BE HELD LIABLE. YOU MAY DISTRUBTE AND MODIFY THE CODE AMONG PRIVATLY OWNED DEVICES BY YOURSELF WITHOUT EXTERNAL HELP BUT YOU CANNOT MAKE THESE DEVICES RUNNING THE SOFTWARE PUBLICLY AVAILABLE. MOLE SAFE NETWORK AND AUTHORISED AFFILIATES ARE THE ONLY ONES ALLOWED TO SELL POS SYSTEMS WITH AS IS OR MODIFIED CODE OF THE CODEBASE THIS README.md RESIDES IN.
+
 ---
 
 ## 💰 Support Development
