@@ -3,7 +3,9 @@
 ## Changelog
 
 ### 2025-01-26 - V1.9.4 (Latest) - System-Wide Enhancements Update
-
+<details>
+<summary>Click to expand</summary>
+ 
 **TL;DR**: Major improvements to deductions handling, export functionality, and data management, along with bug fixes and performance optimizations.
 
 #### Detailed Changes
@@ -57,7 +59,7 @@
 * Enhanced reporting features
 * Improved tax calculation accuracy
 * Further POS terminal stability improvements
-
+</details>
 ---
 
 ### 2025-01-25 - V1.9.3 - Admin Access Control Update
