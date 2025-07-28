@@ -2,7 +2,7 @@
 # Minding Your Buisness EST 2022
 
 [![Version](https://img.shields.io/badge/version-1.9.4-blue.svg)](https://github.com/yourusername/msn-tax-management)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.mit)
 
 A comprehensive tax management system for handling invoices, deductions, receipts, and tax calculations with advanced export capabilities.
 
