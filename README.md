@@ -70,7 +70,10 @@ curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
 chmod +x oemssdprod.sh
 ./oemssdprod.sh
 ```
-
+```bash
+# to update also use the above
+curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
+```
 **What the script does:**
 - Sets up encryption keys automatically
 - Configures admin commands
