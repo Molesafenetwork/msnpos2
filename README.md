@@ -20,19 +20,22 @@ Help keep me and this project stay alive and maintained:
 ```
 bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne
 ```
-[![Donate Bitcoin](https://img.shields.io/badge/Copy_BTC_Address-orange.svg?logo=bitcoin)](javascript:navigator.clipboard.writeText('bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne'))
+[![Donate Bitcoin][![Copy BTC Address](https://img.shields.io/badge/Copy_BTC_Address-orange.svg?logo=bitcoin)](https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy)  
+[![Donate via AnonPay](https://img.shields.io/badge/Donate_via_AnonPay-orange?logo=bitcoin)](https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy)
+
 
 **Litecoin (LTC)**
 ```
 ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l
 ```
-[![Donate Litecoin](https://img.shields.io/badge/Copy_LTC_Address-lightgrey.svg?logo=litecoin)](javascript:navigator.clipboard.writeText('ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l'))
+[![Copy LTC Address](https://img.shields.io/badge/Copy_LTC_Address-lightgrey.svg?logo=litecoin)](https://trocador.app/?ticker_to=LTC&network_to=LTC&ref=6GZ3qkFXVy)  
+[![Donate via AnonPay](https://img.shields.io/badge/Donate_via_AnonPay-lightgrey?logo=litecoin)](https://trocador.app/?ticker_to=LTC&network_to=LTC&ref=6GZ3qkFXVy)
 
 **Monero (XMR)**
 ```
 8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9
 ```
-[![Donate Monero](https://img.shields.io/badge/Copy_XMR_Address-orange.svg?logo=monero)](javascript:navigator.clipboard.writeText('8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9'))
+[![Copy XMR Address](https://img.shields.io/badge/Copy_XMR_Address-orange.svg?logo=monero)](https://trocador.app/?ticker_to=XMR&network_to=XMR&ref=6GZ3qkFXVy)
 
 ### Need to Buy Crypto First?
 If you don't have crypto yet, you can buy and exchange on [Trocador](https://trocador.app/?ref=6GZ3qkFXVy) and then send to the addresses above.
