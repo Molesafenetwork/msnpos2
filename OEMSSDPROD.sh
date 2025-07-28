@@ -5,7 +5,7 @@
 
 set -e
 
-echo "=== Orange Pi 3B POS System Setup ==="
+echo "=== Orange Pi 3B MSN open-POS System Setup ==="
 
 # Update system
 echo "Updating system..."
