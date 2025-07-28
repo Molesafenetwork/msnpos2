@@ -41,7 +41,10 @@ Use our simple shell script for a one-click installation experience:
 
 ```bash
 # Download and run the recommended installation script
-wget https://your-repo.com/scripts/oemssdprod.sh
+curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
+```
+```bash
+# if script downloads but isnt executable use this
 chmod +x oemssdprod.sh
 ./oemssdprod.sh
 ```
