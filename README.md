@@ -1,5 +1,5 @@
-# MSN Tax Management System 
-# Minding Your Buisness EST 2022
+# MSN Tax Management System EST 2022
+# Minding Your Buisness - Streamlining your tax management needs.
 
 [![Version](https://img.shields.io/badge/version-1.9.4-blue.svg)](https://github.com/Molesafenetwork/msnpos2)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.mit)
