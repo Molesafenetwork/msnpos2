@@ -20,7 +20,7 @@ Help keep me and this project stay alive and maintained:
 ```
 bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne
 ```
-[![Donate Bitcoin][![Copy BTC Address](https://img.shields.io/badge/Copy_BTC_Address-orange.svg?logo=bitcoin)](https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy)  
+[![Copy BTC Address](https://img.shields.io/badge/Copy_BTC_Address-orange.svg?logo=bitcoin)](https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy)  
 [![Donate via AnonPay](https://img.shields.io/badge/Donate_via_AnonPay-orange?logo=bitcoin)](https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy)
 
 
