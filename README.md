@@ -1,105 +1,198 @@
-# MSN Tax Management System
+# MSN Tax Management System - Minding Your Buisness
 
-## Changelog
+[![Version](https://img.shields.io/badge/version-1.9.4-blue.svg)](https://github.com/yourusername/msn-tax-management)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+A comprehensive tax management system for handling invoices, deductions, receipts, and tax calculations with advanced export capabilities.
+
+## 🚀 Current Version: 1.9.4
+
+---
+
+## 💰 Support Development
+
+Help keep this project alive and maintained:
+
+[![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange.svg?logo=bitcoin)](bitcoin:YOUR_BTC_ADDRESS)
+[![Donate Litecoin](https://img.shields.io/badge/Donate-Litecoin-lightgrey.svg?logo=litecoin)](litecoin:YOUR_LTC_ADDRESS)
+[![Donate Monero](https://img.shields.io/badge/Donate-Monero-orange.svg?logo=monero)](monero:YOUR_XMR_ADDRESS)
+
+**Bitcoin:** `YOUR_BTC_ADDRESS_HERE`  
+**Litecoin:** `YOUR_LTC_ADDRESS_HERE`  
+**Monero:** `YOUR_XMR_ADDRESS_HERE`
+
+---
+
+## 📞 Contact & Support
+
+For technical support, bug reports, or general inquiries:
+
+[![Contact Admin](https://img.shields.io/badge/Contact-Admin-blue.svg?logo=mail.ru)](mailto:admin@mole-safe.net)
+
+**Email:** admin@mole-safe.net
+
+---
+
+## 📦 Installation Methods
+
+### Method A: Automated Installation (Recommended)
+
+Use our simple shell script for a one-click installation experience:
+
+```bash
+# Download and run the recommended installation script
+wget https://your-repo.com/scripts/oemssdprod.sh
+chmod +x oemssdprod.sh
+./oemssdprod.sh
+```
+
+**What the script does:**
+- Sets up encryption keys automatically
+- Configures admin commands
+- Guides you through `.env` configuration
+- Handles all dependencies and setup
+
+**Available installation scripts:**
+- `oemssdprod.sh` - **Recommended** for production environments
+- Other scripts available for different hardware configurations
+
+---
+
+### Method B: Manual Installation
+
+For users who prefer manual setup or need custom configurations:
+
+#### Step 1: Generate Encryption Key
+
+Use Node.js and crypto.js to generate a secure encryption key:
+
+```bash
+node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"
+```
+
+#### Step 2: Configure Environment Variables
+
+Copy the generated encryption key and update your `.env` file:
+
+```bash
+ENCRYPTION_KEY=your-generated-key-here
+# Update other variables according to your needs
+```
+
+#### Step 3: Verify Configuration
+
+- Check [`.bash_history`](/.bash_history) for crypto.js key generation details
+- Review [`.env`](/.env) file for proper configuration layout
+- Ensure all variables correspond to your requirements
+
+**Note:** All generated data is stored in the `.data` directory and remains private, but encryption is still recommended for security.
+
+---
+
+## 📋 Changelog
 
 ### 2025-01-26 - V1.9.4 (Latest) - System-Wide Enhancements Update
+
 <details>
-<summary>Click to expand</summary>
- 
+<summary>🔍 Click to expand detailed changes</summary>
+
 **TL;DR**: Major improvements to deductions handling, export functionality, and data management, along with bug fixes and performance optimizations.
 
-#### Detailed Changes
+#### 🎯 Detailed Changes
 
 **Deductions & Receipts Management**
-* Improved deductions handling with better validation
-  * Auto Removes duplicate and $0 value deductions
-  * Enhanced filtering for invalid entries
-  * Better source tracking for receipts vs manual deductions
-* Added comprehensive export functionality
-  * New PDF export for deductions and receipts
-  * CSV and Excel export options added
-  * Customizable date range filtering for exports
-* Streamlined receipt management
-  * All receipts now stored in `deductions.json`
-  * Improved image handling and preview
-  * Better categorization and filtering
+- Improved deductions handling with better validation
+  - Auto removes duplicate and $0 value deductions
+  - Enhanced filtering for invalid entries
+  - Better source tracking for receipts vs manual deductions
+- Added comprehensive export functionality
+  - New PDF export for deductions and receipts
+  - CSV and Excel export options added
+  - Customizable date range filtering for exports
+- Streamlined receipt management
+  - All receipts now stored in `deductions.json`
+  - Improved image handling and preview
+  - Better categorization and filtering
 
 **Performance & Stability**
-* Fixed infinite recursion issue in deductions handling
-* Optimized data retrieval and storage
-* Added compression support for better response times
-* Improved error handling across all operations
+- Fixed infinite recursion issue in deductions handling
+- Optimized data retrieval and storage
+- Added compression support for better response times
+- Improved error handling across all operations
 
 **UI/UX Improvements**
-* Enhanced deductions page interface
-  * Better visibility of valid entries
-  * Improved sorting and filtering
-  * Clearer display of receipt attachments
-* Added export options to relevant pages
-* Improved feedback for user actions
-* Better error messaging and validation feedback
+- Enhanced deductions page interface
+  - Better visibility of valid entries
+  - Improved sorting and filtering
+  - Clearer display of receipt attachments
+- Added export options to relevant pages
+- Improved feedback for user actions
+- Better error messaging and validation feedback
 
 **Technical Improvements**
-* Centralized data storage in `deductions.json`
-* Enhanced validation for all data entries
-* Improved file handling and storage efficiency
-* Better memory management and performance
+- Centralized data storage in `deductions.json`
+- Enhanced validation for all data entries
+- Improved file handling and storage efficiency
+- Better memory management and performance
 
 **Bug Fixes**
-* Fixed issues with deductions not appearing in receipts view
-* Resolved duplicate entries in exports
-* Fixed Medicare Levy calculation issues
-* Improved handling of invalid data entries
+- Fixed issues with deductions not appearing in receipts view
+- Resolved duplicate entries in exports
+- Fixed Medicare Levy calculation issues
+- Improved handling of invalid data entries
 
-#### Known Issues
-* Medicare Levy calculations may need further refinement
-* Some POS terminal features may be unstable for admin users like edit for example
+#### ⚠️ Known Issues
+- Medicare Levy calculations may need further refinement
+- Some POS terminal features may be unstable for admin users (e.g., edit functionality)
 
-#### Coming Soon
-* Enhanced reporting features
-* Improved tax calculation accuracy
-* Further POS terminal stability improvements
+#### 🔮 Coming Soon
+- Enhanced reporting features
+- Improved tax calculation accuracy
+- Further POS terminal stability improvements
+
 </details>
+
 ---
 
 ### 2025-01-25 - V1.9.3 - Admin Access Control Update
 
 <details>
-<summary>Click to expand</summary>
+<summary>🔍 Click to expand changes</summary>
 
 **Key Changes:**
-* Added admin-only restrictions for receipt and deduction management
-* Improved dashboard organization and UI
-* Enhanced security features and access controls
-* Added server-side validation and better error handling
-* Updated documentation and deployment instructions
+- Added admin-only restrictions for receipt and deduction management
+- Improved dashboard organization and UI
+- Enhanced security features and access controls
+- Added server-side validation and better error handling
+- Updated documentation and deployment instructions
 
 **Known Issues:**
-* None noticed
+- None noticed
 
 **Planned Features:**
-* Enhanced audit logging
-* Granular permissions
-* Improved admin reporting
+- Enhanced audit logging
+- Granular permissions
+- Improved admin reporting
+
 </details>
 
 ---
 
-<h1> msninvoices v1.9.4 </h1>
-<h2>install guide</h2>
-<b> A 1. use a simple .sh script to install theirs a couple for diffrent hardware and needs the reccomended is oemssdprod.sh this will setup encryption keys and setup admin commands pretty much a one click install itll also guide you through what needs changes eg the .env config </b>
-<b>B 1. import this to glitch.me to use for free... nvm glitch is gone</b>
+## 🔧 Features
 
-<b>2. use the terminal & crypto.js to generate a encryption key paste the below code into the terminal: 
+- **Invoice Management** - Create, edit, and track invoices
+- **Deductions & Receipts** - Comprehensive receipt management with image support
+- **Export Capabilities** - PDF, CSV, and Excel export options
+- **Tax Calculations** - Automated tax calculations including Medicare Levy
+- **Admin Controls** - Secure admin-only features and access controls
+- **Data Security** - Encrypted data storage and secure authentication
 
-node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());
+---
 
-(although everything added and generated is sotred in the .data directory and isnt public this is recomended)</b>
+## 📝 License
 
-<b>3. paste the encryption key beside the proper .env veriable ENCRYPTION_KEY=outputed-key</b>
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-<b>4. update the rest of the veriables to corespond with your needs</b>
+---
 
-<b>5. check  <a href="/.bash_history">.bash_history</a> for more info on crypto.js key generation </b>
-
-<b>6. check  <a href="/.env">.env</a> to see the simple .env layout</b>
+**MSN Tax Management System - Minding Your Buisness v1.9.4** - Streamlining your tax management needs.
