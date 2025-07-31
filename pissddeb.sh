@@ -1,6 +1,6 @@
 #!/bin/bash
 # Debian Bullseye 6.6 POS System Setup Script
-# Run with: curl -sSL [YOUR_URL] | bash
+# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/pissddeb.sh | bash
 
 set -e
 
