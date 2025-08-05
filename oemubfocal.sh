@@ -9,8 +9,8 @@ echo "Orange Pi 3B v2 MSN open-POS System Setup (Ubuntu Focal)"
 
 # Update system
 echo "Updating system..."
-sudo apt update && sudo apt upgrade -y
-
+# sudo apt update && sudo apt upgrade -y
+echo "---- UPDATE SKIPPED ----"
 # Install essential packages (Ubuntu Focal optimized)
 echo "Installing essential packages..."
 sudo apt install -y curl git nodejs npm xinit xserver-xorg \
