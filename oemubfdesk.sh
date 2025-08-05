@@ -22,9 +22,9 @@ sudo apt install -y curl git chromium-browser unclutter sed nano \
     wmctrl xdotool gnome-session-bin dbus-x11 x11-utils \
     systemd-timesyncd openssh-server build-essential
 
-# Install Node.js 18.x LTS from NodeSource repository
-echo "Installing Node.js 18.x LTS..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js 14.x LTS from NodeSource repository (matching package.json requirements)
+echo "Installing Node.js 14.x LTS..."
+curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Verify Node.js installation
