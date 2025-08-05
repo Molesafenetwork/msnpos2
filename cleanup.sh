@@ -6,7 +6,7 @@ set -e
 
 echo "=== Complete Node.js/NPM Cleanup ==="
 echo "Automatically removing all Node.js and NPM installations..."
-
+echo " this suould work "
 # Stop any running POS services
 echo "Stopping POS services..."
 sudo systemctl stop pos-system pos-kiosk 2>/dev/null || true
