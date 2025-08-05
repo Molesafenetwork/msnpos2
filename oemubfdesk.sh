@@ -18,18 +18,22 @@ sudo apt update && sudo apt upgrade -y
 
 # Install essential packages for Ubuntu Desktop
 echo "Installing essential packages..."
-sudo apt install -y curl git nodejs npm chromium-browser unclutter sed nano \
+sudo apt install -y curl git chromium-browser unclutter sed nano \
     wmctrl xdotool gnome-session-bin dbus-x11 x11-utils \
-    systemd-timesyncd openssh-server
+    systemd-timesyncd openssh-server build-essential
 
-# Install Node Version Manager and use LTS Node.js
-echo "Setting up Node.js LTS version..."
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | sudo -u posuser bash
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install --lts && nvm use --lts && nvm alias default lts/*'
+# Install Node.js 18.x LTS from NodeSource repository
+echo "Installing Node.js 18.x LTS..."
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
 
-# Install PM2 globally using the LTS Node.js version
+# Verify Node.js installation
+echo "Node.js version: $(node --version)"
+echo "NPM version: $(npm --version)"
+
+# Install PM2 globally
 echo "Installing PM2..."
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && npm install -g pm2'
+sudo npm install -g pm2
 
 # Create POS user
 echo "Creating POS user..."
@@ -46,19 +50,43 @@ cd pos-system
 
 # Install Node.js dependencies and setup crypto key
 echo "Installing Node.js dependencies and generating crypto key..."
-# Use the NVM Node.js version for installation
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system && npm cache clean --force'
-# Install with legacy peer deps to resolve conflicts
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system && npm install --legacy-peer-deps'
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system && npm install crypto-js --legacy-peer-deps'
-# Alternative: use npm audit fix if there are still issues
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system && npm audit fix --force' || echo "Some audit fixes may have failed, continuing..."
+# Clear npm cache first
+sudo -u posuser npm cache clean --force
+
+# Create package.json if it doesn't exist to avoid issues
+cd /home/posuser/pos-system
+if [ ! -f package.json ]; then
+    echo "Creating basic package.json..."
+    sudo -u posuser tee package.json << 'PKGJSON'
+{
+  "name": "msnpos2",
+  "version": "1.0.0",
+  "description": "POS System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
+PKGJSON
+fi
+
+# Install dependencies with force to resolve conflicts
+echo "Installing crypto-js..."
+sudo -u posuser npm install crypto-js --save --force
+
+# Install other common POS dependencies
+echo "Installing common POS dependencies..."
+sudo -u posuser npm install express body-parser cors --save --force || echo "Some packages may have warnings, continuing..."
+
+# Run npm audit fix to resolve security issues
+sudo -u posuser npm audit fix --force || echo "Audit fix completed with warnings"
 
 ENV_PATH=".env"
 cd /home/posuser/pos-system
 
-# Generate crypto key using NVM Node.js
-CRYPTO_KEY=$(sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"')
+# Generate crypto key using system Node.js
+CRYPTO_KEY=$(sudo -u posuser bash -c 'cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"')
 
 if [ ! -f "$ENV_PATH" ]; then
     echo "Creating new .env with generated encryption key..."
@@ -84,7 +112,7 @@ else
 fi
 
 # Log keygen command to history
-echo 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"' >> /home/posuser/.bash_history
+echo 'cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"' >> /home/posuser/.bash_history
 
 echo "✅ Encryption key process completed."
 
@@ -116,8 +144,6 @@ EOF
 sudo tee /usr/local/bin/generate-key << 'EOF'
 #!/bin/bash
 cd /home/posuser/pos-system
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 echo "Generating new encryption key..."
 NEW_KEY=$(node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());")
 echo "New encryption key: $NEW_KEY"
@@ -227,9 +253,7 @@ Type=simple
 User=posuser
 WorkingDirectory=/home/posuser/pos-system
 Environment=NODE_ENV=production
-Environment=NVM_DIR=/home/posuser/.nvm
-ExecStartPre=/bin/bash -c 'export NVM_DIR="/home/posuser/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
-ExecStart=/bin/bash -c 'export NVM_DIR="/home/posuser/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && node server.js'
+ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=3
 
@@ -289,11 +313,6 @@ sudo chmod +x /home/posuser/setup-hotkeys.sh
 
 # Create custom bashrc for posuser with POS commands
 sudo tee /home/posuser/.bashrc << 'EOF'
-# Load NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
 # Custom POS Terminal Commands
 alias edit-env='nano /home/posuser/pos-system/.env && sudo systemctl restart pos-system'
 alias setup-tailnet='curl -fsSL https://tailscale.com/install.sh | sh && echo "Run: sudo tailscale up"'
