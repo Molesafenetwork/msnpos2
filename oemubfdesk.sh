@@ -5,7 +5,18 @@
 
 set -e
 
-echo "Orange Pi 3B MSN open-POS System Setup (Ubuntu Desktop)"
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${RED}"
+echo "███╗   ███╗ ██████╗ ██╗     ███████╗    ██████╗  ██████╗ ███████╗"
+echo "████╗ ████║██╔═══██╗██║     ██╔════╝    ██╔══██╗██╔═══██╗██╔════╝"
+echo "██╔████╔██║██║   ██║██║     █████╗      ██████╔╝██║   ██║███████╗"
+echo "██║╚██╔╝██║██║   ██║██║     ██╔══╝      ██╔═══╝ ██║   ██║╚════██║"
+echo "██║ ╚═╝ ██║╚██████╔╝███████╗███████╗    ██║     ╚██████╔╝███████║"
+echo "╚═╝     ╚═╝ ╚═════╝ ╚══════╝╚══════╝    ╚═╝      ╚═════╝ ╚══════╝"
+echo "                MOLE - POS - ORANGEPI 3b MSN POS                 "
+echo -e "${NC}"
 
 # Check if running on desktop environment
 if [ -z "$XDG_CURRENT_DESKTOP" ]; then
