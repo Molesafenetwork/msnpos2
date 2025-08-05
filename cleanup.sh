@@ -8,6 +8,7 @@ echo "=== Complete Node.js/NPM Cleanup ==="
 echo "This will remove all Node.js and NPM installations"
 read -p "Continue? (y/N): " -n 1 -r
 
+echo "y"
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Cleanup cancelled."
     exit 1
