@@ -15,8 +15,23 @@ sudo apt update && sudo apt upgrade -y
 echo "Installing essential packages..."
 sudo apt install -y curl git nodejs npm xinit xserver-xorg \
     xserver-xorg-video-fbdev xserver-xorg-input-evdev \
-    chromium-browser unclutter sed nano x11-xserver-utils \
+    unclutter sed nano x11-xserver-utils \
     xserver-xorg-legacy mesa-utils
+
+# Install Chromium via apt instead of snap to avoid hanging
+echo "Installing Chromium browser..."
+sudo apt install -y chromium-browser || {
+    echo "Chromium-browser not available via apt, installing via snap..."
+    sudo snap install chromium --classic || {
+        echo "Snap installation failed, trying alternative..."
+        wget -qO - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
+        sudo apt install -y google-chrome-stable
+        # Create chromium-browser symlink for compatibility
+        sudo ln -sf /usr/bin/google-chrome-stable /usr/bin/chromium-browser 2>/dev/null || true
+    }
+}
 
 # Check if we need to install Node.js from NodeSource (Ubuntu Focal has older Node.js)
 NODE_VERSION=$(node --version 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")
@@ -196,12 +211,33 @@ unclutter -idle 1 &
 
 # Wait for POS server to be ready
 echo "Waiting for POS server to start..."
+RETRY_COUNT=0
 while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 2
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  if [ $RETRY_COUNT -gt 30 ]; then
+    echo "POS server failed to start, continuing anyway..."
+    break
+  fi
 done
 
-# Start Chromium in kiosk mode pointing to your POS
-chromium-browser \
+# Determine which browser to use
+BROWSER=""
+if command -v chromium-browser >/dev/null 2>&1; then
+    BROWSER="chromium-browser"
+elif command -v google-chrome-stable >/dev/null 2>&1; then
+    BROWSER="google-chrome-stable"
+elif command -v chromium >/dev/null 2>&1; then
+    BROWSER="chromium"
+else
+    echo "No suitable browser found, exiting..."
+    exit 1
+fi
+
+echo "Using browser: $BROWSER"
+
+# Start browser in kiosk mode pointing to your POS
+$BROWSER \
   --kiosk \
   --no-first-run \
   --disable-restore-session-state \
