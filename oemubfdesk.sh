@@ -61,14 +61,41 @@ if [ ! -f package.json ]; then
     echo "Creating basic package.json..."
     sudo -u posuser tee package.json << 'PKGJSON'
 {
-  "name": "msnpos2",
+  "name": "advanced-invoice-generator",
   "version": "1.0.0",
-  "description": "POS System",
+  "description": "Advanced invoice generation system with encryption and web interface",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "axios": "^1.8.2",
+    "bcrypt": "^5.0.1",
+    "body-parser": "^1.19.0",
+    "chart.js": "^3.7.1",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.1.1",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.6",
+    "express": "^4.21.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-rate-limit": "^5.3.0",
+    "express-session": "^1.18.2",
+    "fs-extra": "^10.0.0",
+    "helmet": "^4.6.0",
+    "moment": "^2.29.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "pdfkit": "^0.13.0",
+    "sharp": "^0.32.1",
+    "uuid": "^8.3.2"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "license": "MIT"
 }
 PKGJSON
 fi
