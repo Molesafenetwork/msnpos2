@@ -22,7 +22,7 @@ sudo apt update && sudo apt upgrade -y
 echo "Installing essential packages..."
 sudo apt install -y curl git chromium-browser unclutter sed nano \
     wmctrl xdotool gnome-session-bin dbus-x11 x11-utils \
-    systemd-timesyncd openssh-server build-essential ufw
+    systemd-timesyncd openssh-server build-essential ufw snapd
 
 # Install Node.js 14.x-18.x LTS from NodeSource repository (14 is matching package.json requirements 18 is safer)
 echo "Installing Node.js 18.x LTS..."
