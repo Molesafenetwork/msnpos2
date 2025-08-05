@@ -1,7 +1,7 @@
 #!/bin/bash
 # Orange Pi 3B POS System Setup Script for Ubuntu Desktop 22+
 # Compatible with RK3566 chipset and Ubuntu Desktop
-# Run with: curl -sSL [your-url]/ubuntu-pos-setup.sh | bash
+# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk.sh | bash
 
 set -e
 
