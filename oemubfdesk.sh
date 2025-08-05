@@ -3,6 +3,7 @@
 # Compatible with RK3566 chipset and Ubuntu Desktop
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk.sh | bash
 
+set -e
 
 
 echo "                MOLE - POS - ORANGEPI 3b MSN POS                 "
