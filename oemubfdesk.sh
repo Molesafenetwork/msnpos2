@@ -114,7 +114,7 @@ else
 fi
 
 # Log keygen command to history
-echo 'cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"' >> /home/posuser/.bash_history
+sudo -u posuser bash -c 'echo '\''cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"'\'' >> /home/posuser/.bash_history'
 
 echo "✅ Encryption key process completed."
 
