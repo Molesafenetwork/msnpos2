@@ -5,19 +5,19 @@
 
 set -e
 
- echo " === Orange Pi 3B v2 Complete POS Kiosk Setup === 
-      * **  *  *    *    * *      *     *        
-    ** *   *         ****    **  * * *     *     
-***              *        *    *    *  * **  *** 
-      *                                          
-               *  *            * *  ** *         
-              *     *   * *              *       
-                      *                   *      
-       * *       *       * *            *        
-*** *                *        *    *         *** 
-        *  *           *     *             *     
-***                                          *** 
-     *      *                     *              "
+echo " === Orange Pi 3B v2 Complete POS Kiosk Setup === "
+echo "      * **  *  *    *    * *      *     *        "
+echo "    ** *   *         ****    **  * * *     *     "
+echo "***              *        *    *    *  * **  *** "
+echo "      *                                          "
+echo "               *  *            * *  ** *         "
+echo "              *     *   * *              *      " 
+echo "                      *                   *     " 
+echo "       * *       *       * *            *        "
+echo "*** *                *        *    *         *** "
+echo "        *  *           *     *             *     "
+echo "***                                          *** "
+echo "     *      *                     *              "
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 
