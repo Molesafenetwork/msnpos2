@@ -269,7 +269,7 @@ sudo tee /etc/systemd/system/pos-kiosk.service << 'EOF'
 Description=POS Kiosk Display
 After=pos-system.service graphical-session.target
 Wants=pos-system.service
-Requires=graphical-session.target
+Requires=graphical.target
 
 [Service]
 Type=forking
@@ -284,7 +284,7 @@ Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=graphical.target
 EOF
 
 # Create desktop autostart entry for POS kiosk
