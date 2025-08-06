@@ -1,30 +1,33 @@
 #!/bin/bash
-# Orange Pi 3B POS System Setup Script for Ubuntu Desktop 22+
-# Compatible with RK3566 chipset and Ubuntu Desktop
+# Orange Pi 3B POS System Setup Script for Ubuntu Desktop 22+ with XFCE
+# Compatible with RK3566 chipset and XFCE Desktop Environment
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk.sh | bash
 
 set -e
 
+echo "                MOLE - POS - ORANGEPI 3b MSN POS (XFCE)                 "
 
-echo "                MOLE - POS - ORANGEPI 3b MSN POS                 "
-
-
-# Check if running on desktop environment
-if [ -z "$XDG_CURRENT_DESKTOP" ]; then
-    echo "Warning: No desktop environment detected. This script is designed for Ubuntu Desktop."
+# Check if running on XFCE desktop environment
+if [ "$XDG_CURRENT_DESKTOP" = "XFCE" ]; then
+    echo "✅ XFCE Desktop detected - configuring for XFCE environment"
+elif [ -z "$XDG_CURRENT_DESKTOP" ]; then
+    echo "⚠️ Warning: No desktop environment detected. Assuming XFCE."
+else
+    echo "⚠️ Warning: Detected $XDG_CURRENT_DESKTOP. This script is optimized for XFCE."
 fi
 
 # Update system
 echo "Updating system..."
 sudo apt update && sudo apt upgrade -y
 
-# Install essential packages for Ubuntu Desktop
-echo "Installing essential packages..."
+# Install essential packages for XFCE Desktop
+echo "Installing essential packages for XFCE..."
 sudo apt install -y curl git chromium-browser unclutter sed nano \
-    wmctrl xdotool gnome-session-bin dbus-x11 x11-utils \
-    systemd-timesyncd openssh-server build-essential ufw snapd
+    wmctrl xdotool lightdm x11-utils xfce4-session \
+    systemd-timesyncd openssh-server build-essential ufw snapd \
+    xfce4-terminal xfce4-panel xfce4-settings xinit xorg
 
-# Install Node.js 14.x-18.x LTS from NodeSource repository (14 is matching package.json requirements 18 is safer)
+# Install Node.js 18.x LTS from NodeSource repository
 echo "Installing Node.js 18.x LTS..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
@@ -212,22 +215,23 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create admin-mode command
+# Create admin-mode command for XFCE
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
-# Toggle between POS kiosk and admin mode
+# Toggle between POS kiosk and admin mode (XFCE version)
 PID=$(pgrep -f "chromium.*kiosk.*localhost:3000")
 if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
-    gnome-terminal --full-screen
+    # Start XFCE terminal in fullscreen
+    DISPLAY=:0 xfce4-terminal --fullscreen &
 else
     echo "Starting POS kiosk mode..."
     /usr/local/bin/start-pos-kiosk &
 fi
 EOF
 
-# Create start-pos-kiosk command
+# Create start-pos-kiosk command for XFCE
 sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
 # Wait for POS server to be ready
@@ -235,11 +239,24 @@ while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
 
+# Wait for X server to be ready
+while ! xset q >/dev/null 2>&1; do
+    sleep 1
+done
+
+# Set display to primary display
+export DISPLAY=:0
+
 # Hide cursor
-unclutter -idle 1 &
+unclutter -idle 1 -display :0 &
+
+# Disable XFCE screensaver/power management
+xset -display :0 s off
+xset -display :0 -dpms
+xset -display :0 s noblank
 
 # Start Chromium in kiosk mode
-chromium-browser \
+DISPLAY=:0 chromium-browser \
   --kiosk \
   --no-first-run \
   --disable-restore-session-state \
@@ -252,12 +269,8 @@ chromium-browser \
   --aggressive-cache-discard \
   --start-maximized \
   --window-position=0,0 \
-  --display=:0 \
+  --user-data-dir=/tmp/chromium-kiosk \
   http://localhost:3000 &
-
-# Disable screen blanking
-gsettings set org.gnome.desktop.screensaver lock-enabled false
-gsettings set org.gnome.desktop.session idle-delay 0
 EOF
 
 # Make commands executable
@@ -290,11 +303,11 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-# Create POS kiosk service for desktop environment
+# Create POS kiosk service for XFCE
 sudo tee /etc/systemd/system/pos-kiosk.service << 'EOF'
 [Unit]
 Description=POS Kiosk Display
-After=pos-system.service graphical-session.target
+After=pos-system.service lightdm.service
 Wants=pos-system.service
 Requires=graphical.target
 
@@ -305,16 +318,17 @@ Group=posuser
 Environment=DISPLAY=:0
 Environment=XDG_RUNTIME_DIR=/run/user/1001
 WorkingDirectory=/home/posuser
-ExecStartPre=/bin/sleep 10
+ExecStartPre=/bin/sleep 15
 ExecStart=/usr/local/bin/start-pos-kiosk
 Restart=always
-RestartSec=5
+RestartSec=10
+RestartPreventExitStatus=0
 
 [Install]
 WantedBy=graphical.target
 EOF
 
-# Create desktop autostart entry for POS kiosk
+# Create XFCE autostart entry for POS kiosk
 sudo mkdir -p /home/posuser/.config/autostart
 sudo tee /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
@@ -328,14 +342,45 @@ X-GNOME-Autostart-enabled=true
 StartupNotify=false
 EOF
 
-# Create keyboard shortcut script
+# Create XFCE keyboard shortcut setup script
 sudo tee /home/posuser/setup-hotkeys.sh << 'EOF'
 #!/bin/bash
-# Setup custom keyboard shortcuts for Ubuntu Desktop
-gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']"
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ name 'Admin Mode Toggle'
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ command '/usr/local/bin/admin-mode'
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ binding '<Ctrl><Alt>t'
+# Setup custom keyboard shortcuts for XFCE
+mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
+
+# Create keyboard shortcuts configuration for XFCE
+cat > ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml << 'XFCE_KEYS'
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-keyboard-shortcuts" version="1.0">
+  <property name="commands" type="empty">
+    <property name="default" type="empty">
+      <property name="&lt;Alt&gt;F1" type="string" value="xfce4-popup-applicationsmenu"/>
+      <property name="&lt;Alt&gt;F2" type="string" value="xfce4-appfinder --collapsed"/>
+      <property name="&lt;Alt&gt;F3" type="string" value="xfce4-appfinder"/>
+      <property name="&lt;Primary&gt;&lt;Alt&gt;Delete" type="string" value="xflock4"/>
+      <property name="&lt;Primary&gt;&lt;Alt&gt;l" type="string" value="xflock4"/>
+      <property name="&lt;Primary&gt;&lt;Alt&gt;t" type="string" value="/usr/local/bin/admin-mode"/>
+    </property>
+    <property name="custom" type="empty">
+      <property name="&lt;Primary&gt;&lt;Alt&gt;t" type="string" value="/usr/local/bin/admin-mode"/>
+      <property name="override" type="bool" value="true"/>
+    </property>
+  </property>
+  <property name="xfwm4" type="empty">
+    <property name="default" type="empty">
+      <property name="&lt;Alt&gt;F4" type="string" value="close_window_key"/>
+      <property name="&lt;Alt&gt;F6" type="string" value="stick_window_key"/>
+      <property name="&lt;Alt&gt;F7" type="string" value="move_window_key"/>
+      <property name="&lt;Alt&gt;F8" type="string" value="resize_window_key"/>
+      <property name="&lt;Alt&gt;F9" type="string" value="hide_window_key"/>
+      <property name="&lt;Alt&gt;F10" type="string" value="maximize_window_key"/>
+      <property name="&lt;Alt&gt;F11" type="string" value="fullscreen_key"/>
+      <property name="&lt;Alt&gt;F12" type="string" value="above_key"/>
+    </property>
+  </property>
+</channel>
+XFCE_KEYS
 EOF
 
 sudo chmod +x /home/posuser/setup-hotkeys.sh
@@ -356,7 +401,7 @@ alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 # Terminal customization
 PS1='\[\033[01;32m\]POS-ADMIN\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-echo "=== POS Admin Terminal ==="
+echo "=== POS Admin Terminal (XFCE) ==="
 echo "Available commands:"
 echo "  edit-env      - Edit environment variables"
 echo "  setup-tailnet - Install and setup Tailscale" 
@@ -388,29 +433,58 @@ EOF
 sudo chown -R posuser:posuser /home/posuser
 sudo chmod +x /home/posuser/.profile
 
-# Configure auto-login for posuser
-sudo mkdir -p /etc/gdm3
-sudo tee /etc/gdm3/custom.conf << 'EOF'
-[daemon]
-AutomaticLoginEnable = true
-AutomaticLogin = posuser
-
-[security]
-
-[xdmcp]
-
-[chooser]
-
-[debug]
+# Configure LightDM auto-login for posuser (XFCE compatible)
+sudo tee /etc/lightdm/lightdm.conf << 'EOF'
+[Seat:*]
+autologin-user=posuser
+autologin-user-timeout=0
+user-session=xfce
 EOF
+
+# Create XFCE session configuration to prevent desktop interference
+sudo mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
+sudo tee /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-power-manager" version="1.0">
+  <property name="xfce4-power-manager" type="empty">
+    <property name="blank-on-ac" type="int" value="0"/>
+    <property name="blank-on-battery" type="int" value="0"/>
+    <property name="dpms-enabled" type="bool" value="false"/>
+    <property name="dpms-on-ac-sleep" type="uint" value="0"/>
+    <property name="dpms-on-ac-off" type="uint" value="0"/>
+    <property name="dpms-on-battery-sleep" type="uint" value="0"/>
+    <property name="dpms-on-battery-off" type="uint" value="0"/>
+  </property>
+</channel>
+EOF
+
+# Disable XFCE screensaver
+sudo tee /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-screensaver.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-screensaver" version="1.0">
+  <property name="saver" type="empty">
+    <property name="enabled" type="bool" value="false"/>
+    <property name="mode" type="int" value="0"/>
+  </property>
+  <property name="lock" type="empty">
+    <property name="enabled" type="bool" value="false"/>
+  </property>
+</channel>
+EOF
+
+# Set ownership for XFCE configs
+sudo chown -R posuser:posuser /home/posuser/.config
 
 # Enable services
 sudo systemctl daemon-reload
 sudo systemctl enable pos-system
+sudo systemctl enable lightdm
 
 # Disable Ubuntu's automatic updates to prevent interruptions
-sudo systemctl disable unattended-upgrades
-sudo systemctl mask unattended-upgrades
+sudo systemctl disable unattended-upgrades 2>/dev/null || echo "Unattended upgrades not installed"
+sudo systemctl mask unattended-upgrades 2>/dev/null || echo "Unattended upgrades not installed"
 
 # Configure firewall for POS system
 sudo ufw allow 3000/tcp
@@ -418,12 +492,14 @@ sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
 echo ""
-echo "=== SETUP COMPLETE ==="
+echo "=== XFCE POS SETUP COMPLETE ==="
 echo ""
 echo "IMPORTANT: Reboot the system to start POS kiosk mode"
 echo "sudo reboot"
 echo ""
 echo "=== POS SYSTEM INFORMATION ==="
+echo "• Desktop Environment: XFCE"
+echo "• Display Manager: LightDM"
 echo "• POS will auto-start in kiosk mode on boot"
 echo "• Access URL: http://localhost:3000"
 echo "• POS User: posuser / posuser123"
