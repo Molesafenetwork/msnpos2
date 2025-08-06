@@ -1,50 +1,30 @@
 #!/bin/bash
-# Orange Pi 3B POS System Setup Script for Ubuntu XFCE 22.04
-# Compatible with RK3566 chipset and XFCE Desktop
+# Orange Pi 3B POS System Setup Script for Ubuntu Desktop 22+
+# Compatible with RK3566 chipset and Ubuntu Desktop
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk.sh | bash
 
 set -e
 
-echo "                MOLE - POS - ORANGEPI 3b MSN POS (XFCE)                 "
 
-# Check if running XFCE
-if [ "$XDG_CURRENT_DESKTOP" = "XFCE" ] || [ "$DESKTOP_SESSION" = "xfce" ]; then
-    echo "XFCE desktop environment detected. Good!"
-elif [ -z "$XDG_CURRENT_DESKTOP" ]; then
-    echo "Warning: No desktop environment detected. Assuming XFCE."
-else
-    echo "Warning: Desktop environment is $XDG_CURRENT_DESKTOP. This script is optimized for XFCE."
+echo "                MOLE - POS - ORANGEPI 3b MSN POS                 "
+
+
+# Check if running on desktop environment
+if [ -z "$XDG_CURRENT_DESKTOP" ]; then
+    echo "Warning: No desktop environment detected. This script is designed for Ubuntu Desktop."
 fi
 
 # Update system
 echo "Updating system..."
 sudo apt update && sudo apt upgrade -y
 
-# Install essential packages for Ubuntu XFCE
+# Install essential packages for Ubuntu Desktop
 echo "Installing essential packages..."
-sudo apt install -y curl git unclutter sed nano \
-    wmctrl xdotool lightdm x11-utils xorg-dev \
-    systemd-timesyncd openssh-server build-essential ufw snapd \
-    xfce4-terminal xfce4-settings
+sudo apt install -y curl git chromium-browser unclutter sed nano \
+    wmctrl xdotool gnome-session-bin dbus-x11 x11-utils \
+    systemd-timesyncd openssh-server build-essential ufw snapd
 
-# Install Chromium with fallback options for Orange Pi
-echo "Installing web browser..."
-if sudo apt install -y chromium-browser 2>/dev/null; then
-    echo "✅ Chromium browser installed"
-    BROWSER_CMD="chromium-browser"
-elif sudo apt install -y chromium 2>/dev/null; then
-    echo "✅ Chromium installed"
-    BROWSER_CMD="chromium"
-elif sudo apt install -y firefox 2>/dev/null; then
-    echo "⚠️  Using Firefox as fallback browser"
-    BROWSER_CMD="firefox"
-else
-    echo "❌ No suitable browser found. Installing snap chromium..."
-    sudo snap install chromium
-    BROWSER_CMD="chromium"
-fi
-
-# Install Node.js 18.x LTS from NodeSource repository
+# Install Node.js 14.x-18.x LTS from NodeSource repository (14 is matching package.json requirements 18 is safer)
 echo "Installing Node.js 18.x LTS..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
@@ -57,53 +37,12 @@ echo "NPM version: $(npm --version)"
 echo "Installing PM2..."
 sudo npm install -g pm2
 
-# User Management - Create proper accounts and remove default user
-echo "Setting up user accounts..."
-
-# Get the current user (should be the default orangepi user)
-CURRENT_USER=$(whoami)
-echo "Current user detected: $CURRENT_USER"
-
-# Create admin user with strong password
-echo "Creating admin user..."
-sudo useradd -m -s /bin/bash admin
-# Generate a random strong password for admin
-ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/" | cut -c1-12)
-echo "admin:$ADMIN_PASSWORD" | sudo chpasswd
-sudo usermod -a -G sudo,audio,video admin
-
-# Create POS user with simple password for daily use
+# Create POS user
 echo "Creating POS user..."
 sudo useradd -m -s /bin/bash posuser
-echo "posuser:pos2024!" | sudo chpasswd
-# Add posuser to necessary groups (but not sudo for security)
-sudo usermod -a -G audio,video posuser
-
-# Store admin credentials securely
-sudo mkdir -p /root/credentials
-sudo tee /root/credentials/admin_info.txt << EOF
-=== ADMIN ACCOUNT CREDENTIALS ===
-Username: admin
-Password: $ADMIN_PASSWORD
-Created: $(date)
-
-=== POS ACCOUNT CREDENTIALS ===  
-Username: posuser
-Password: pos2024!
-Purpose: Daily POS operations (no sudo access)
-
-=== SECURITY NOTES ===
-- Default user '$CURRENT_USER' will be removed after reboot
-- Admin user has full sudo access
-- POS user has no sudo access (security)
-- SSH is enabled for remote admin access
-EOF
-
-sudo chmod 600 /root/credentials/admin_info.txt
-
-echo "✅ Admin user created with password: $ADMIN_PASSWORD"
-echo "✅ POS user created with password: pos2024!"
-echo "✅ Credentials saved to /root/credentials/admin_info.txt"
+echo "posuser:posuser123" | sudo chpasswd
+# Add posuser to necessary groups
+sudo usermod -a -G sudo,audio,video posuser
 
 # Clone your POS repository
 echo "Cloning POS application..."
@@ -201,6 +140,9 @@ else
     fi
 fi
 
+# Log keygen command to history
+sudo -u posuser bash -c 'echo '\''cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"'\'' >> /home/posuser/.bash_history'
+
 echo "✅ Encryption key process completed."
 
 # Ensure .data directory exists
@@ -270,85 +212,52 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create admin-mode command for XFCE
+# Create admin-mode command
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
-# Toggle between POS kiosk and admin mode for XFCE
-PID=$(pgrep -f "(chromium|firefox).*kiosk.*localhost:3000")
+# Toggle between POS kiosk and admin mode
+PID=$(pgrep -f "chromium.*kiosk.*localhost:3000")
 if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
-    # Start XFCE terminal in fullscreen
-    DISPLAY=:0 xfce4-terminal --maximize --hold &
+    gnome-terminal --full-screen
 else
     echo "Starting POS kiosk mode..."
     /usr/local/bin/start-pos-kiosk &
 fi
 EOF
 
-# Create start-pos-kiosk command for XFCE
-sudo tee /usr/local/bin/start-pos-kiosk << EOF
+# Create start-pos-kiosk command
+sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
-export DISPLAY=:0
-
-# Detect available browser
-if command -v chromium-browser &> /dev/null; then
-    BROWSER_CMD="chromium-browser"
-elif command -v chromium &> /dev/null; then
-    BROWSER_CMD="chromium"  
-elif command -v firefox &> /dev/null; then
-    BROWSER_CMD="firefox"
-else
-    BROWSER_CMD="chromium"
-fi
-
 # Wait for POS server to be ready
-echo "Waiting for POS server to start..."
 while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
 
-# Kill any existing browser processes
-pkill -f "chromium\|firefox" || true
-
 # Hide cursor
 unclutter -idle 1 &
 
-# Disable XFCE screensaver/power management
-xfconf-query -c xfce4-screensaver -p /saver/enabled -s false 2>/dev/null || true
-xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-enabled -s false 2>/dev/null || true
-xset -dpms 2>/dev/null || true
-xset s off 2>/dev/null || true
+# Start Chromium in kiosk mode
+chromium-browser \
+  --kiosk \
+  --no-first-run \
+  --disable-restore-session-state \
+  --disable-infobars \
+  --disable-translate \
+  --disable-features=TranslateUI \
+  --disable-dev-shm-usage \
+  --no-sandbox \
+  --disk-cache-dir=/tmp \
+  --aggressive-cache-discard \
+  --start-maximized \
+  --window-position=0,0 \
+  --display=:0 \
+  http://localhost:3000 &
 
-# Start browser in kiosk mode
-if [ "\$BROWSER_CMD" = "firefox" ]; then
-    # Firefox kiosk mode
-    firefox --kiosk http://localhost:3000 &
-else
-    # Chromium kiosk mode  
-    \$BROWSER_CMD \\
-      --kiosk \\
-      --no-first-run \\
-      --disable-restore-session-state \\
-      --disable-infobars \\
-      --disable-translate \\
-      --disable-features=TranslateUI \\
-      --disable-dev-shm-usage \\
-      --no-sandbox \\
-      --disk-cache-dir=/tmp \\
-      --aggressive-cache-discard \\
-      --start-maximized \\
-      --window-position=0,0 \\
-      --display=:0 \\
-      --disable-extensions \\
-      --disable-plugins \\
-      --disable-background-timer-throttling \\
-      --disable-backgrounding-occluded-windows \\
-      --disable-renderer-backgrounding \\
-      http://localhost:3000 &
-fi
-
-echo "POS kiosk mode started with \$BROWSER_CMD"
+# Disable screen blanking
+gsettings set org.gnome.desktop.screensaver lock-enabled false
+gsettings set org.gnome.desktop.session idle-delay 0
 EOF
 
 # Make commands executable
@@ -367,8 +276,6 @@ sudo tee /etc/systemd/system/pos-system.service << 'EOF'
 [Unit]
 Description=POS System Node.js Application
 After=network.target
-StartLimitBurst=5
-StartLimitIntervalSec=60
 
 [Service]
 Type=simple
@@ -378,41 +285,36 @@ Environment=NODE_ENV=production
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=3
-StandardOutput=journal
-StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Create POS kiosk service for XFCE desktop environment
+# Create POS kiosk service for desktop environment
 sudo tee /etc/systemd/system/pos-kiosk.service << 'EOF'
 [Unit]
 Description=POS Kiosk Display
-After=pos-system.service graphical-session.target lightdm.service
+After=pos-system.service graphical-session.target
 Wants=pos-system.service
 Requires=graphical.target
 
 [Service]
-Type=simple
+Type=forking
 User=posuser
 Group=posuser
 Environment=DISPLAY=:0
 Environment=XDG_RUNTIME_DIR=/run/user/1001
-Environment=HOME=/home/posuser
 WorkingDirectory=/home/posuser
-ExecStartPre=/bin/sleep 15
+ExecStartPre=/bin/sleep 10
 ExecStart=/usr/local/bin/start-pos-kiosk
 Restart=always
-RestartSec=10
-KillMode=mixed
-TimeoutStopSec=30
+RestartSec=5
 
 [Install]
 WantedBy=graphical.target
 EOF
 
-# Create XFCE autostart directory and entry for POS kiosk
+# Create desktop autostart entry for POS kiosk
 sudo mkdir -p /home/posuser/.config/autostart
 sudo tee /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
@@ -424,232 +326,91 @@ Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 StartupNotify=false
-Terminal=false
 EOF
 
-# Create XFCE keyboard shortcut setup script
-sudo tee /home/posuser/setup-xfce-hotkeys.sh << 'EOF'
+# Create keyboard shortcut script
+sudo tee /home/posuser/setup-hotkeys.sh << 'EOF'
 #!/bin/bash
-# Setup custom keyboard shortcuts for XFCE
-mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
-
-# Create keyboard shortcuts configuration
-cat > ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml << 'XFCEKEYS'
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfce4-keyboard-shortcuts" version="1.0">
-  <property name="commands" type="empty">
-    <property name="default" type="empty">
-      <property name="&lt;Alt&gt;F1" type="string" value="xfce4-popup-applicationsmenu"/>
-      <property name="&lt;Alt&gt;F2" type="string" value="xfrun4"/>
-    </property>
-    <property name="custom" type="empty">
-      <property name="&lt;Primary&gt;&lt;Alt&gt;t" type="string" value="/usr/local/bin/admin-mode"/>
-      <property name="&lt;Primary&gt;&lt;Alt&gt;r" type="string" value="/usr/local/bin/restart-pos"/>
-      <property name="override" type="bool" value="true"/>
-    </property>
-  </property>
-  <property name="xfwm4" type="empty">
-    <property name="default" type="empty">
-      <property name="&lt;Alt&gt;Tab" type="string" value="cycle_windows_key"/>
-      <property name="Escape" type="string" value="cancel_key"/>
-    </property>
-    <property name="custom" type="empty">
-      <property name="override" type="bool" value="true"/>
-    </property>
-  </property>
-  <property name="providers" type="array">
-    <value type="string" value="xfwm4"/>
-    <value type="string" value="commands"/>
-  </property>
-</channel>
-XFCEKEYS
+# Setup custom keyboard shortcuts for Ubuntu Desktop
+gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']"
+gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ name 'Admin Mode Toggle'
+gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ command '/usr/local/bin/admin-mode'
+gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ binding '<Ctrl><Alt>t'
 EOF
 
-sudo chmod +x /home/posuser/setup-xfce-hotkeys.sh
+sudo chmod +x /home/posuser/setup-hotkeys.sh
 
-# Create admin user bashrc with additional system commands
-sudo tee /home/admin/.bashrc << 'EOF'
-# Admin Terminal Commands (Full System Access)
-alias edit-env='sudo nano /home/posuser/pos-system/.env && sudo systemctl restart pos-system'
+# Create custom bashrc for posuser with POS commands
+sudo tee /home/posuser/.bashrc << 'EOF'
+# Custom POS Terminal Commands
+alias edit-env='nano /home/posuser/pos-system/.env && sudo systemctl restart pos-system'
 alias setup-tailnet='curl -fsSL https://tailscale.com/install.sh | sh && echo "Run: sudo tailscale up"'
 alias restart-pos='sudo systemctl restart pos-system pos-kiosk'
 alias pos-logs='journalctl -u pos-system -f'
-alias generate-key='cd /home/posuser/pos-system && sudo -u posuser node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(\"New key:\", key.toString());"'
+alias generate-key='cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(\"New key:\", key.toString());"'
 alias check-env='cat /home/posuser/pos-system/.env'
-alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
-alias admin-mode='sudo -u posuser /usr/local/bin/admin-mode'
-alias kiosk-mode='sudo -u posuser /usr/local/bin/start-pos-kiosk'
-alias show-credentials='sudo cat /root/credentials/admin_info.txt'
-alias remove-default-user='sudo /usr/local/bin/remove-default-user'
-alias system-status='systemctl status pos-system pos-kiosk && echo "=== NETWORK ===" && ip addr show && echo "=== DISK ===" && df -h'
-
-# Terminal customization
-PS1='\[\033[01;31m\]ADMIN\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-
-echo "=== ADMIN Terminal (Full Access) ==="
-echo "Available commands:"
-echo "  edit-env           - Edit POS environment variables"
-echo "  setup-tailnet      - Install and setup Tailscale VPN" 
-echo "  restart-pos        - Restart POS services"
-echo "  pos-logs           - View POS application logs"
-echo "  generate-key       - Generate new encryption key"
-echo "  check-env          - View current POS settings"
-echo "  pdf-storage        - Check PDF storage directory"
-echo "  admin-mode         - Switch POS to admin mode"
-echo "  kiosk-mode         - Switch POS to kiosk mode"
-echo "  show-credentials   - Show admin/POS passwords"
-echo "  remove-default-user- Remove default orangepi user"
-echo "  system-status      - Show system and POS status"
-echo ""
-echo "Security: Admin account with full sudo access"
-echo "================================="
-EOF
-
-# Create custom bashrc for posuser with POS commands (limited access)
-sudo tee /home/posuser/.bashrc << 'EOF'
-# Custom POS Terminal Commands (Limited Access)
-alias edit-env='echo "Access denied. Contact admin to edit environment variables."'
-alias setup-tailnet='echo "Access denied. Contact admin for Tailscale setup."'
-alias restart-pos='echo "Access denied. Use Ctrl+Alt+R hotkey or contact admin."'
-alias pos-logs='journalctl -u pos-system -f'
-alias generate-key='echo "Access denied. Contact admin for key generation."'
-alias check-env='echo "Access denied. Contact admin to view environment settings."'
 alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
 alias admin-mode='/usr/local/bin/admin-mode'
 alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
-alias contact-admin='echo "Admin SSH: ssh admin@$(hostname -I | cut -d\" \" -f1)"'
 
 # Terminal customization
-PS1='\[\033[01;32m\]POS-USER\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+PS1='\[\033[01;32m\]POS-ADMIN\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-echo "=== POS User Terminal (Limited Access) ==="
+echo "=== POS Admin Terminal ==="
 echo "Available commands:"
+echo "  edit-env      - Edit environment variables"
+echo "  setup-tailnet - Install and setup Tailscale" 
+echo "  restart-pos   - Restart POS services"
 echo "  pos-logs      - View POS application logs"
+echo "  generate-key  - Generate new encryption key"
+echo "  check-env     - View current .env settings"
 echo "  pdf-storage   - Check PDF storage directory"
 echo "  admin-mode    - Toggle between kiosk and admin mode"
 echo "  kiosk-mode    - Start POS kiosk mode"
-echo "  contact-admin - Show admin SSH connection info"
 echo ""
-echo "Note: Limited access account for POS operations only"
-echo "Hotkeys: Ctrl+Alt+T (admin mode), Ctrl+Alt+R (restart)"
-echo "For system changes, contact admin user"
+echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
 echo "=========================="
 EOF
 
-# Create POS user profile setup for XFCE
+# Create POS user profile setup
 sudo tee /home/posuser/.profile << 'EOF'
 # Setup POS environment
 export PATH="/usr/local/bin:$PATH"
 
-# Auto-setup XFCE hotkeys on first login
-if [ ! -f ~/.xfce-hotkeys-setup ]; then
-    /home/posuser/setup-xfce-hotkeys.sh
-    touch ~/.xfce-hotkeys-setup
-fi
-
-# Set XFCE as the desktop session
-export XDG_CURRENT_DESKTOP=XFCE
-export DESKTOP_SESSION=xfce
-EOF
-
-# Create script to safely remove default user after reboot
-sudo tee /usr/local/bin/remove-default-user << 'EOF'
-#!/bin/bash
-# Script to remove default orangepi user safely
-
-# Get the original user that ran the setup
-ORIGINAL_USER="orangepi"
-if [ -f /tmp/setup-original-user ]; then
-    ORIGINAL_USER=$(cat /tmp/setup-original-user)
-fi
-
-echo "This will remove the default user: $ORIGINAL_USER"
-echo "Make sure you're logged in as 'admin' user before proceeding!"
-echo ""
-read -p "Are you sure you want to remove user '$ORIGINAL_USER'? (yes/no): " confirm
-
-if [ "$confirm" = "yes" ]; then
-    # Check if we're not running as the user we want to delete
-    if [ "$(whoami)" = "$ORIGINAL_USER" ]; then
-        echo "Error: You cannot delete the user you're currently logged in as!"
-        echo "Please log in as 'admin' user first, then run this command."
-        exit 1
-    fi
-    
-    echo "Removing user $ORIGINAL_USER..."
-    
-    # Kill any processes owned by the user
-    sudo pkill -u "$ORIGINAL_USER" || true
-    
-    # Remove the user and their home directory
-    sudo userdel -r "$ORIGINAL_USER" 2>/dev/null || true
-    
-    # Remove from any additional groups
-    sudo deluser "$ORIGINAL_USER" sudo 2>/dev/null || true
-    
-    echo "✅ User '$ORIGINAL_USER' has been removed"
-    echo "✅ System is now secure with only admin and posuser accounts"
-    
-    # Clean up
-    sudo rm -f /tmp/setup-original-user
-else
-    echo "Operation cancelled"
+# Auto-setup hotkeys on first login
+if [ ! -f ~/.hotkeys-setup ]; then
+    /home/posuser/setup-hotkeys.sh
+    touch ~/.hotkeys-setup
 fi
 EOF
 
-# Create a record of the original user for later removal
-echo "$CURRENT_USER" | sudo tee /tmp/setup-original-user > /dev/null
-
-sudo chmod +x /usr/local/bin/remove-default-user
-
-# Set proper permissions for both user accounts
-sudo chown -R admin:admin /home/admin
+# Set proper permissions
 sudo chown -R posuser:posuser /home/posuser
-sudo chmod +x /home/admin/.profile /home/posuser/.profile 2>/dev/null || true
+sudo chmod +x /home/posuser/.profile
 
-# Configure auto-login for posuser with LightDM (XFCE uses LightDM, not GDM)
-sudo tee /etc/lightdm/lightdm.conf << 'EOF'
-[Seat:*]
-autologin-guest=false
-autologin-user=posuser
-autologin-user-timeout=0
-autologin-session=xfce
+# Configure auto-login for posuser
+sudo mkdir -p /etc/gdm3
+sudo tee /etc/gdm3/custom.conf << 'EOF'
+[daemon]
+AutomaticLoginEnable = true
+AutomaticLogin = posuser
+
+[security]
+
+[xdmcp]
+
+[chooser]
+
+[debug]
 EOF
-
-# Create a script to ensure services start in correct order
-sudo tee /usr/local/bin/pos-startup-check << 'EOF'
-#!/bin/bash
-# Ensure POS system starts correctly
-sleep 5
-
-# Check if POS system is running
-if ! systemctl is-active --quiet pos-system; then
-    echo "Starting POS system..."
-    systemctl start pos-system
-    sleep 10
-fi
-
-# Check if we're in a desktop session before starting kiosk
-if [ -n "$DISPLAY" ] && [ "$XDG_CURRENT_DESKTOP" = "XFCE" ]; then
-    if ! pgrep -f "chromium.*kiosk.*localhost:3000" > /dev/null; then
-        echo "Starting POS kiosk..."
-        /usr/local/bin/start-pos-kiosk &
-    fi
-fi
-EOF
-
-sudo chmod +x /usr/local/bin/pos-startup-check
 
 # Enable services
 sudo systemctl daemon-reload
 sudo systemctl enable pos-system
 
-# Don't enable pos-kiosk service by default to avoid conflicts
-# We'll use autostart instead for XFCE
-
 # Disable Ubuntu's automatic updates to prevent interruptions
-sudo systemctl disable unattended-upgrades 2>/dev/null || true
-sudo systemctl mask unattended-upgrades 2>/dev/null || true
+sudo systemctl disable unattended-upgrades
+sudo systemctl mask unattended-upgrades
 
 # Configure firewall for POS system
 sudo ufw allow 3000/tcp
@@ -657,51 +418,20 @@ sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
 echo ""
-echo "=== SETUP COMPLETE FOR XFCE ==="
+echo "=== SETUP COMPLETE ==="
 echo ""
-echo "IMPORTANT SECURITY INFORMATION:"
-echo "================================="
-echo "✅ Admin user created with password: $ADMIN_PASSWORD"
-echo "✅ POS user created with password: pos2024!"
-echo "✅ Credentials saved to: /root/credentials/admin_info.txt"
-echo ""
-echo "⚠️  DEFAULT USER SECURITY:"
-echo "- Default user '$CURRENT_USER' is still active"
-echo "- After reboot, log in as 'admin' and run: remove-default-user"
-echo "- Or SSH as admin: ssh admin@[ip-address]"
-echo ""
-echo "REBOOT REQUIRED:"
+echo "IMPORTANT: Reboot the system to start POS kiosk mode"
 echo "sudo reboot"
 echo ""
-echo "=== POST-REBOOT ACCESS ==="
-echo "• Kiosk Mode: Automatic (POS interface)"
-echo "• Admin Access: ssh admin@[ip-address] (password: $ADMIN_PASSWORD)"
-echo "• POS User: Kiosk will auto-login as posuser"
-echo "• Admin Console: Ctrl+Alt+T when in kiosk"
+echo "=== POS SYSTEM INFORMATION ==="
+echo "• POS will auto-start in kiosk mode on boot"
+echo "• Access URL: http://localhost:3000"
+echo "• POS User: posuser / posuser123"
 echo ""
-echo "=== USER ACCOUNT STRUCTURE ==="
-echo "• admin    - Full system access, sudo, SSH (password: $ADMIN_PASSWORD)"
-echo "• posuser  - POS operations only, auto-login (password: pos2024!)"
-echo "• $CURRENT_USER - Default user (REMOVE after confirming admin access)"
-echo ""
-echo "=== ADMIN TASKS AFTER REBOOT ==="
-echo "1. SSH as admin: ssh admin@[ip-address]"
-echo "2. Verify POS system works"
-echo "3. Run: remove-default-user"
-echo "4. Run: show-credentials (to view all passwords)"
-echo ""
-echo "=== SECURITY FEATURES ==="
-echo "• POS user has NO sudo access (can't modify system)"
-echo "• Admin user has full access for maintenance"
-echo "• SSH enabled for remote administration"
-echo "• Firewall configured (ports 22, 3000)"
-echo "• Auto-updates disabled (manual control)"
-echo ""
-echo "=== TROUBLESHOOTING ==="
-echo "If kiosk doesn't start automatically:"
-echo "• Run: sudo systemctl status pos-system"
-echo "• Run: /usr/local/bin/start-pos-kiosk"
-echo "• Check logs: journalctl -u pos-system"
+echo "=== ADMIN ACCESS ==="
+echo "• Hotkey: Ctrl+Alt+T (toggle admin/kiosk mode)"
+echo "• Terminal: Open terminal and run any pos command"
+echo "• SSH: ssh posuser@[ip-address]"
 echo ""
 echo "=== AVAILABLE COMMANDS ==="
 echo "• edit-env      - Edit configuration"
