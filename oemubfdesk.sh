@@ -158,7 +158,7 @@ sudo mkdir -p /usr/local/bin
 # Create edit-env command
 sudo tee /usr/local/bin/edit-env << 'EOF'
 #!/bin/bash
-gnome-terminal -- nano /home/posuser/pos-system/.env
+sudo nano /home/posuser/pos-system/.env
 EOF
 
 # Create setup-tailnet command
