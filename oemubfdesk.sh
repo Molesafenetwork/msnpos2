@@ -22,10 +22,27 @@ sudo apt update && sudo apt upgrade -y
 
 # Install essential packages for Ubuntu XFCE
 echo "Installing essential packages..."
-sudo apt install -y curl git chromium-browser unclutter sed nano \
+sudo apt install -y curl git unclutter sed nano \
     wmctrl xdotool lightdm x11-utils xorg-dev \
     systemd-timesyncd openssh-server build-essential ufw snapd \
-    xfce4-terminal xfce4-settings-manager
+    xfce4-terminal xfce4-settings
+
+# Install Chromium with fallback options for Orange Pi
+echo "Installing web browser..."
+if sudo apt install -y chromium-browser 2>/dev/null; then
+    echo "✅ Chromium browser installed"
+    BROWSER_CMD="chromium-browser"
+elif sudo apt install -y chromium 2>/dev/null; then
+    echo "✅ Chromium installed"
+    BROWSER_CMD="chromium"
+elif sudo apt install -y firefox 2>/dev/null; then
+    echo "⚠️  Using Firefox as fallback browser"
+    BROWSER_CMD="firefox"
+else
+    echo "❌ No suitable browser found. Installing snap chromium..."
+    sudo snap install chromium
+    BROWSER_CMD="chromium"
+fi
 
 # Install Node.js 18.x LTS from NodeSource repository
 echo "Installing Node.js 18.x LTS..."
@@ -257,7 +274,7 @@ EOF
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
 # Toggle between POS kiosk and admin mode for XFCE
-PID=$(pgrep -f "chromium.*kiosk.*localhost:3000")
+PID=$(pgrep -f "(chromium|firefox).*kiosk.*localhost:3000")
 if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
@@ -270,9 +287,20 @@ fi
 EOF
 
 # Create start-pos-kiosk command for XFCE
-sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
+sudo tee /usr/local/bin/start-pos-kiosk << EOF
 #!/bin/bash
 export DISPLAY=:0
+
+# Detect available browser
+if command -v chromium-browser &> /dev/null; then
+    BROWSER_CMD="chromium-browser"
+elif command -v chromium &> /dev/null; then
+    BROWSER_CMD="chromium"  
+elif command -v firefox &> /dev/null; then
+    BROWSER_CMD="firefox"
+else
+    BROWSER_CMD="chromium"
+fi
 
 # Wait for POS server to be ready
 echo "Waiting for POS server to start..."
@@ -280,8 +308,8 @@ while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
 
-# Kill any existing chromium processes
-pkill -f chromium-browser || true
+# Kill any existing browser processes
+pkill -f "chromium\|firefox" || true
 
 # Hide cursor
 unclutter -idle 1 &
@@ -289,32 +317,38 @@ unclutter -idle 1 &
 # Disable XFCE screensaver/power management
 xfconf-query -c xfce4-screensaver -p /saver/enabled -s false 2>/dev/null || true
 xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-enabled -s false 2>/dev/null || true
-xset -dpms
-xset s off
+xset -dpms 2>/dev/null || true
+xset s off 2>/dev/null || true
 
-# Start Chromium in kiosk mode
-chromium-browser \
-  --kiosk \
-  --no-first-run \
-  --disable-restore-session-state \
-  --disable-infobars \
-  --disable-translate \
-  --disable-features=TranslateUI \
-  --disable-dev-shm-usage \
-  --no-sandbox \
-  --disk-cache-dir=/tmp \
-  --aggressive-cache-discard \
-  --start-maximized \
-  --window-position=0,0 \
-  --display=:0 \
-  --disable-extensions \
-  --disable-plugins \
-  --disable-background-timer-throttling \
-  --disable-backgrounding-occluded-windows \
-  --disable-renderer-backgrounding \
-  http://localhost:3000 &
+# Start browser in kiosk mode
+if [ "\$BROWSER_CMD" = "firefox" ]; then
+    # Firefox kiosk mode
+    firefox --kiosk http://localhost:3000 &
+else
+    # Chromium kiosk mode  
+    \$BROWSER_CMD \\
+      --kiosk \\
+      --no-first-run \\
+      --disable-restore-session-state \\
+      --disable-infobars \\
+      --disable-translate \\
+      --disable-features=TranslateUI \\
+      --disable-dev-shm-usage \\
+      --no-sandbox \\
+      --disk-cache-dir=/tmp \\
+      --aggressive-cache-discard \\
+      --start-maximized \\
+      --window-position=0,0 \\
+      --display=:0 \\
+      --disable-extensions \\
+      --disable-plugins \\
+      --disable-background-timer-throttling \\
+      --disable-backgrounding-occluded-windows \\
+      --disable-renderer-backgrounding \\
+      http://localhost:3000 &
+fi
 
-echo "POS kiosk mode started"
+echo "POS kiosk mode started with \$BROWSER_CMD"
 EOF
 
 # Make commands executable
