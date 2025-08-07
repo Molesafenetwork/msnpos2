@@ -5,7 +5,7 @@
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk20.sh | bash
 set -e
 
-echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL)                 "
+echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP)                 "
 
 # Check Ubuntu version
 UBUNTU_VERSION=$(lsb_release -rs 2>/dev/null || echo "unknown")
@@ -31,25 +31,43 @@ sudo apt install -y curl git unclutter sed nano \
     systemd-timesyncd openssh-server build-essential ufw \
     xfce4-terminal xfce4-panel xfce4-settings xinit xorg
 
-# Check if we need to install snapd
-if ! command -v snap >/dev/null 2>&1; then
-    echo "Installing snapd..."
-    sudo apt install -y snapd
-fi
+# Install browser - try multiple options, avoid snap
+echo "Installing web browser (avoiding snap)..."
+BROWSER_INSTALLED=false
 
-# Install Chromium - handle different options for focal
-echo "Installing Chromium browser..."
+# Try chromium-browser first
 if apt-cache show chromium-browser >/dev/null 2>&1; then
     echo "Installing chromium-browser from apt..."
-    sudo apt install -y chromium-browser
-elif apt-cache show chromium >/dev/null 2>&1; then
+    sudo apt install -y chromium-browser && BROWSER_INSTALLED=true
+fi
+
+# Try chromium if chromium-browser failed
+if [ "$BROWSER_INSTALLED" = false ] && apt-cache show chromium >/dev/null 2>&1; then
     echo "Installing chromium from apt..."
-    sudo apt install -y chromium
+    sudo apt install -y chromium && BROWSER_INSTALLED=true
+fi
+
+# Try firefox as fallback
+if [ "$BROWSER_INSTALLED" = false ]; then
+    echo "Installing Firefox as fallback browser..."
+    sudo apt install -y firefox && BROWSER_INSTALLED=true
+    # Create chromium-browser symlink pointing to firefox
+    sudo ln -sf /usr/bin/firefox /usr/local/bin/chromium-browser
+fi
+
+# Last resort - download chromium manually
+if [ "$BROWSER_INSTALLED" = false ]; then
+    echo "Installing Chromium manually for ARM64..."
+    cd /tmp
+    wget -O chromium-browser.deb https://launchpad.net/ubuntu/+archive/primary/+files/chromium-browser_1%3a85.0.4183.83-0ubuntu0.20.04.3_arm64.deb
+    sudo dpkg -i chromium-browser.deb || sudo apt-get install -f -y
+    BROWSER_INSTALLED=true
+fi
+
+if [ "$BROWSER_INSTALLED" = true ]; then
+    echo "✅ Browser installation completed"
 else
-    echo "Installing Chromium via snap (focal fallback)..."
-    sudo snap install chromium
-    # Create symlink for consistency
-    sudo ln -sf /snap/bin/chromium /usr/local/bin/chromium-browser
+    echo "❌ Browser installation failed - will use alternative method"
 fi
 
 # Install Node.js 18.x LTS from NodeSource repository (focal compatible)
@@ -211,7 +229,7 @@ echo "PDF storage configured at: ./public/.data"
 echo "Setting up custom commands..."
 sudo mkdir -p /usr/local/bin
 
-# Create all the custom commands (same as before but with focal-specific tweaks)
+# Create all the custom commands with browser detection
 sudo tee /usr/local/bin/edit-env << 'EOF'
 #!/bin/bash
 sudo nano /home/posuser/pos-system/.env
@@ -262,11 +280,11 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create admin-mode command for focal XFCE
+# Create admin-mode command with browser detection
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
 # Toggle between POS kiosk and admin mode (XFCE focal version)
-PID=$(pgrep -f "chromium.*kiosk.*localhost:3000" || pgrep -f "chromium-browser.*kiosk.*localhost:3000")
+PID=$(pgrep -f "kiosk.*localhost:3000")
 if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
@@ -278,7 +296,7 @@ else
 fi
 EOF
 
-# Create start-pos-kiosk command for focal XFCE
+# Create start-pos-kiosk command with intelligent browser detection
 sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
 # Wait for POS server to be ready
@@ -306,39 +324,33 @@ xset -display :0 s off
 xset -display :0 -dpms
 xset -display :0 s noblank
 
-# Determine which Chromium command to use
+# Determine which browser to use (priority order)
+BROWSER_CMD=""
+BROWSER_ARGS=""
+
 if command -v chromium-browser >/dev/null 2>&1; then
-    CHROMIUM_CMD="chromium-browser"
+    BROWSER_CMD="chromium-browser"
+    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk"
 elif command -v chromium >/dev/null 2>&1; then
-    CHROMIUM_CMD="chromium"
-elif command -v /snap/bin/chromium >/dev/null 2>&1; then
-    CHROMIUM_CMD="/snap/bin/chromium"
+    BROWSER_CMD="chromium"
+    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk"
+elif command -v firefox >/dev/null 2>&1; then
+    BROWSER_CMD="firefox"
+    BROWSER_ARGS="--kiosk --private-window"
 else
-    echo "Error: No Chromium browser found"
+    echo "Error: No suitable browser found"
     exit 1
 fi
 
-# Start Chromium in kiosk mode (focal compatible flags)
-echo "Starting POS kiosk with $CHROMIUM_CMD..."
-DISPLAY=:0 $CHROMIUM_CMD \
-  --kiosk \
-  --no-first-run \
-  --disable-restore-session-state \
-  --disable-infobars \
-  --disable-translate \
-  --disable-dev-shm-usage \
-  --no-sandbox \
-  --disk-cache-dir=/tmp \
-  --start-maximized \
-  --window-position=0,0 \
-  --user-data-dir=/tmp/chromium-kiosk \
-  http://localhost:3000 &
+# Start browser in kiosk mode
+echo "Starting POS kiosk with $BROWSER_CMD..."
+DISPLAY=:0 $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 &
 EOF
 
 # Make commands executable
 sudo chmod +x /usr/local/bin/*
 
-# Create systemd services (same as before)
+# Create systemd services
 sudo tee /etc/systemd/system/pos-system.service << 'EOF'
 [Unit]
 Description=POS System Node.js Application
@@ -381,7 +393,7 @@ RestartPreventExitStatus=0
 WantedBy=graphical.target
 EOF
 
-# Create XFCE autostart and configuration (focal compatible)
+# Create XFCE autostart and configuration
 sudo mkdir -p /home/posuser/.config/autostart
 sudo tee /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
@@ -395,7 +407,7 @@ X-GNOME-Autostart-enabled=true
 StartupNotify=false
 EOF
 
-# XFCE keyboard shortcut setup (focal compatible)
+# XFCE keyboard shortcut setup
 sudo tee /home/posuser/setup-hotkeys.sh << 'EOF'
 #!/bin/bash
 mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
@@ -414,7 +426,7 @@ EOF
 
 sudo chmod +x /home/posuser/setup-hotkeys.sh
 
-# Create bashrc with focal-specific info
+# Create bashrc
 sudo tee /home/posuser/.bashrc << 'EOF'
 # Custom POS Terminal Commands
 alias edit-env='nano /home/posuser/pos-system/.env && sudo systemctl restart pos-system'
@@ -430,7 +442,7 @@ alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 # Terminal customization
 PS1='\[\033[01;32m\]POS-FOCAL\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-echo "=== POS Admin Terminal (Ubuntu Focal) ==="
+echo "=== POS Admin Terminal (Ubuntu Focal - No Snap) ==="
 echo "Available commands:"
 echo "  edit-env      - Edit environment variables"
 echo "  setup-tailnet - Install and setup Tailscale" 
@@ -443,7 +455,7 @@ echo "  admin-mode    - Toggle between kiosk and admin mode"
 echo "  kiosk-mode    - Start POS kiosk mode"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
-echo "Ubuntu Focal (20.04) - No system upgrade required"
+echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
 echo "=========================="
 EOF
 
@@ -471,7 +483,7 @@ autologin-user-timeout=0
 user-session=xfce
 EOF
 
-# XFCE power management (focal compatible)
+# XFCE power management
 sudo mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
 sudo tee /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -497,16 +509,15 @@ sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
 echo ""
-echo "=== FOCAL POS SETUP COMPLETE (No System Upgrade) ==="
+echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues) ==="
 echo ""
 echo "IMPORTANT: Reboot the system to start POS kiosk mode"
 echo "sudo reboot"
 echo ""
 echo "=== SYSTEM INFORMATION ==="
-echo "• Ubuntu Focal (20.04) - Existing packages preserved"
+echo "• Ubuntu Focal (20.04) - No snap packages used"
+echo "• Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Fallback browser installed')"
 echo "• Desktop Environment: XFCE"
-echo "• 200+ system packages left unchanged"
-echo "• Only POS-specific packages installed"
 echo "• Access URL: http://localhost:3000"
 echo "• POS User: posuser / posuser123"
 echo ""
