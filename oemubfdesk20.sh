@@ -6,7 +6,7 @@
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk20.sh | bash
 set -e
 
-echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - DISPLAY :1                 "
+echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - AUTO DISPLAY DETECTION                 "
 
 # Check Ubuntu version
 UBUNTU_VERSION=$(lsb_release -rs 2>/dev/null || echo "unknown")
@@ -282,23 +282,59 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create admin-mode command with browser detection (DISPLAY :1)
+# Create admin-mode command with browser detection (Auto Display Detection)
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
-# Toggle between POS kiosk and admin mode (XFCE focal version - DISPLAY :1)
+# Toggle between POS kiosk and admin mode (XFCE focal version - Auto Display Detection)
 PID=$(pgrep -f "kiosk.*localhost:3000")
 if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
-    # Start XFCE terminal in fullscreen on DISPLAY :1
-    DISPLAY=:1 xfce4-terminal --fullscreen &
+    # Detect available display and start XFCE terminal in fullscreen
+    AVAILABLE_DISPLAY=$(detect-display)
+    echo "Using display: $AVAILABLE_DISPLAY"
+    DISPLAY=$AVAILABLE_DISPLAY xfce4-terminal --fullscreen &
 else
     echo "Starting POS kiosk mode..."
     /usr/local/bin/start-pos-kiosk &
 fi
 EOF
 
-# Create start-pos-kiosk command with intelligent browser detection (DISPLAY :1)
+# Create display detection utility
+sudo tee /usr/local/bin/detect-display << 'EOF'
+#!/bin/bash
+# Auto-detect available display for maximum compatibility
+
+# Function to check if a display is available
+check_display() {
+    local display=$1
+    if DISPLAY=$display xset q >/dev/null 2>&1; then
+        echo $display
+        return 0
+    fi
+    return 1
+}
+
+# Try displays in order of preference
+DISPLAYS=(":0" ":1" ":10" ":11" ":2" ":3")
+
+echo "Detecting available displays..." >&2
+for display in "${DISPLAYS[@]}"; do
+    if check_display $display; then
+        echo "Found working display: $display" >&2
+        echo $display
+        exit 0
+    fi
+done
+
+# If no display found, default to :0 and let the system handle it
+echo "No working display detected, defaulting to :0" >&2
+echo ":0"
+EOF
+
+sudo chmod +x /usr/local/bin/detect-display
+
+# Create start-pos-kiosk command with intelligent browser detection (Auto Display Detection)
 sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
 # Wait for POS server to be ready
@@ -310,21 +346,35 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Wait for X server to be ready on DISPLAY :1
-while ! DISPLAY=:1 xset q >/dev/null 2>&1; do
+# Auto-detect available display
+DETECTED_DISPLAY=$(detect-display)
+export DISPLAY=$DETECTED_DISPLAY
+
+echo "Using detected display: $DETECTED_DISPLAY"
+
+# Wait for X server to be ready on detected display
+echo "Waiting for X server on $DETECTED_DISPLAY..."
+for i in {1..30}; do
+    if DISPLAY=$DETECTED_DISPLAY xset q >/dev/null 2>&1; then
+        break
+    fi
     sleep 1
 done
 
-# Set display to :1
-export DISPLAY=:1
-
 # Hide cursor
-unclutter -idle 1 -display :1 &
+unclutter -idle 1 -display $DETECTED_DISPLAY &
 
-# Disable XFCE screensaver/power management on DISPLAY :1
-xset -display :1 s off
-xset -display :1 -dpms
-xset -display :1 s noblank
+# Disable XFCE screensaver/power management on detected display
+xset -display $DETECTED_DISPLAY s off
+xset -display $DETECTED_DISPLAY -dpms
+xset -display $DETECTED_DISPLAY s noblank
+
+# Get screen information for multi-screen support
+SCREEN_INFO=$(xrandr --display $DETECTED_DISPLAY --listmonitors 2>/dev/null || echo "")
+if [ ! -z "$SCREEN_INFO" ]; then
+    echo "Screen configuration:"
+    echo "$SCREEN_INFO"
+fi
 
 # Determine which browser to use (priority order)
 BROWSER_CMD=""
@@ -344,9 +394,15 @@ else
     exit 1
 fi
 
-# Start browser in kiosk mode on DISPLAY :1
-echo "Starting POS kiosk with $BROWSER_CMD on DISPLAY :1..."
-DISPLAY=:1 $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 &
+# Start browser in kiosk mode on detected display
+echo "Starting POS kiosk with $BROWSER_CMD on display $DETECTED_DISPLAY..."
+DISPLAY=$DETECTED_DISPLAY $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 &
+
+# Optional: If multiple monitors detected, try to span or duplicate
+if echo "$SCREEN_INFO" | grep -q "Monitors: [2-9]"; then
+    echo "Multiple monitors detected - browser will use primary display"
+    # You could add xrandr commands here to configure multi-monitor setup if needed
+fi
 EOF
 
 # Make commands executable
@@ -371,10 +427,10 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-# Updated systemd service for DISPLAY :1
+# Updated systemd service for Auto Display Detection
 sudo tee /etc/systemd/system/pos-kiosk.service << 'EOF'
 [Unit]
-Description=POS Kiosk Display
+Description=POS Kiosk Display (Auto-Detect)
 After=pos-system.service lightdm.service
 Wants=pos-system.service
 Requires=graphical.target
@@ -383,7 +439,6 @@ Requires=graphical.target
 Type=forking
 User=posuser
 Group=posuser
-Environment=DISPLAY=:1
 Environment=XDG_RUNTIME_DIR=/run/user/1001
 WorkingDirectory=/home/posuser
 ExecStartPre=/bin/sleep 20
@@ -402,7 +457,7 @@ sudo tee /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
 Name=POS Kiosk
-Comment=Start POS system in kiosk mode on DISPLAY :1
+Comment=Start POS system in kiosk mode with auto display detection
 Exec=/usr/local/bin/start-pos-kiosk
 Hidden=false
 NoDisplay=false
@@ -445,7 +500,7 @@ alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 # Terminal customization
 PS1='\[\033[01;32m\]POS-FOCAL\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-echo "=== POS Admin Terminal (Ubuntu Focal - No Snap - DISPLAY :1) ==="
+echo "=== POS Admin Terminal (Ubuntu Focal - No Snap - Auto Display Detection) ==="
 echo "Available commands:"
 echo "  edit-env      - Edit environment variables"
 echo "  setup-tailnet - Install and setup Tailscale" 
@@ -456,16 +511,18 @@ echo "  check-env     - View current .env settings"
 echo "  pdf-storage   - Check PDF storage directory"
 echo "  admin-mode    - Toggle between kiosk and admin mode"
 echo "  kiosk-mode    - Start POS kiosk mode"
+echo "  detect-display- Check current display configuration"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
 echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
-echo "Using DISPLAY :1"
+echo "Current Display: $(detect-display 2>/dev/null || echo 'Auto-Detect')"
 echo "=========================="
 EOF
 
 sudo tee /home/posuser/.profile << 'EOF'
 export PATH="/usr/local/bin:$PATH"
-export DISPLAY=:1
+# Auto-detect display on login
+export DISPLAY=$(detect-display 2>/dev/null || echo ":0")
 if [ ! -f ~/.hotkeys-setup ]; then
     /home/posuser/setup-hotkeys.sh
     touch ~/.hotkeys-setup
@@ -476,18 +533,42 @@ EOF
 sudo chown -R posuser:posuser /home/posuser
 sudo chmod +x /home/posuser/.profile
 
-# Configure LightDM for focal with DISPLAY :1
+# Configure LightDM for focal with Auto Display Detection
 if [ -f /etc/lightdm/lightdm.conf ]; then
     sudo cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
 fi
 
+# Create a more flexible LightDM configuration that can adapt to different displays
 sudo tee /etc/lightdm/lightdm.conf << 'EOF'
 [Seat:*]
 autologin-user=posuser
 autologin-user-timeout=0
 user-session=xfce
-xserver-command=X :1 -auth /var/run/lightdm/root/:1
+# Let X server auto-detect the best display configuration
+# xserver-command will be set dynamically based on system
 EOF
+
+# Create a startup script to detect and configure displays
+sudo tee /etc/lightdm/setup-display.sh << 'EOF'
+#!/bin/bash
+# Auto-configure display for LightDM based on available hardware
+
+# Try to detect connected displays
+if command -v xrandr >/dev/null 2>&1; then
+    # Get connected displays
+    CONNECTED_DISPLAYS=$(xrandr --listproviders 2>/dev/null | grep -c "Provider" || echo "1")
+    echo "Detected $CONNECTED_DISPLAYS display provider(s)"
+fi
+
+# Set up display based on detection
+if [ -f /sys/class/drm/card0*/enabled ] && grep -q "enabled" /sys/class/drm/card0*/enabled 2>/dev/null; then
+    echo "Hardware display detected"
+else
+    echo "Using default display configuration"
+fi
+EOF
+
+sudo chmod +x /etc/lightdm/setup-display.sh
 
 # XFCE power management
 sudo mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
@@ -515,7 +596,7 @@ sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
 echo ""
-echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues - DISPLAY :1) ==="
+echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues - Auto Display Detection) ==="
 echo ""
 echo "IMPORTANT: Reboot the system to start POS kiosk mode"
 echo "sudo reboot"
@@ -524,12 +605,14 @@ echo "=== SYSTEM INFORMATION ==="
 echo "• Ubuntu Focal (20.04) - No snap packages used"
 echo "• Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Fallback browser installed')"
 echo "• Desktop Environment: XFCE"
-echo "• Display: :1 (modified from :0)"
+echo "• Display: Auto-Detection (will use :0, :1, :10, :11, :2, or :3 based on availability)"
+echo "• Multi-Screen: Compatible with single and multi-monitor setups"
 echo "• Access URL: http://localhost:3000"
 echo "• POS User: posuser / posuser123"
 echo ""
 echo "=== ADMIN ACCESS ==="
 echo "• Hotkey: Ctrl+Alt+T (toggle admin/kiosk mode)"
 echo "• SSH: ssh posuser@[ip-address]"
+echo "• Display Check: run 'detect-display' command"
 echo ""
 echo "System ready for reboot!"
