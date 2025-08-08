@@ -73,6 +73,8 @@ EOL
             echo "Please answer y or n.";;
     esac
 done
+echo "adding keybinds"
+curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/pos-hotkeys.sh | bash
 
 # Step 3: Start server and show logs
 echo
