@@ -2,10 +2,11 @@
 # Orange Pi 3B POS System Setup Script for Ubuntu Focal (20.04)
 # NO SYSTEM UPGRADE - Uses existing packages where possible
 # Compatible with RK3566 chipset and XFCE Desktop Environment
+# Modified to use DISPLAY :1
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk20.sh | bash
 set -e
 
-echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP)                 "
+echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - DISPLAY :1                 "
 
 # Check Ubuntu version
 UBUNTU_VERSION=$(lsb_release -rs 2>/dev/null || echo "unknown")
@@ -281,23 +282,23 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create admin-mode command with browser detection
+# Create admin-mode command with browser detection (DISPLAY :1)
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
-# Toggle between POS kiosk and admin mode (XFCE focal version)
+# Toggle between POS kiosk and admin mode (XFCE focal version - DISPLAY :1)
 PID=$(pgrep -f "kiosk.*localhost:3000")
 if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
-    # Start XFCE terminal in fullscreen
-    DISPLAY=:0 xfce4-terminal --fullscreen &
+    # Start XFCE terminal in fullscreen on DISPLAY :1
+    DISPLAY=:1 xfce4-terminal --fullscreen &
 else
     echo "Starting POS kiosk mode..."
     /usr/local/bin/start-pos-kiosk &
 fi
 EOF
 
-# Create start-pos-kiosk command with intelligent browser detection
+# Create start-pos-kiosk command with intelligent browser detection (DISPLAY :1)
 sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
 # Wait for POS server to be ready
@@ -309,21 +310,21 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Wait for X server to be ready
-while ! xset q >/dev/null 2>&1; do
+# Wait for X server to be ready on DISPLAY :1
+while ! DISPLAY=:1 xset q >/dev/null 2>&1; do
     sleep 1
 done
 
-# Set display to primary display
-export DISPLAY=:0
+# Set display to :1
+export DISPLAY=:1
 
 # Hide cursor
-unclutter -idle 1 -display :0 &
+unclutter -idle 1 -display :1 &
 
-# Disable XFCE screensaver/power management
-xset -display :0 s off
-xset -display :0 -dpms
-xset -display :0 s noblank
+# Disable XFCE screensaver/power management on DISPLAY :1
+xset -display :1 s off
+xset -display :1 -dpms
+xset -display :1 s noblank
 
 # Determine which browser to use (priority order)
 BROWSER_CMD=""
@@ -343,9 +344,9 @@ else
     exit 1
 fi
 
-# Start browser in kiosk mode
-echo "Starting POS kiosk with $BROWSER_CMD..."
-DISPLAY=:0 $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 &
+# Start browser in kiosk mode on DISPLAY :1
+echo "Starting POS kiosk with $BROWSER_CMD on DISPLAY :1..."
+DISPLAY=:1 $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 &
 EOF
 
 # Make commands executable
@@ -370,6 +371,7 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
+# Updated systemd service for DISPLAY :1
 sudo tee /etc/systemd/system/pos-kiosk.service << 'EOF'
 [Unit]
 Description=POS Kiosk Display
@@ -381,7 +383,7 @@ Requires=graphical.target
 Type=forking
 User=posuser
 Group=posuser
-Environment=DISPLAY=:0
+Environment=DISPLAY=:1
 Environment=XDG_RUNTIME_DIR=/run/user/1001
 WorkingDirectory=/home/posuser
 ExecStartPre=/bin/sleep 20
@@ -400,7 +402,7 @@ sudo tee /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
 Name=POS Kiosk
-Comment=Start POS system in kiosk mode
+Comment=Start POS system in kiosk mode on DISPLAY :1
 Exec=/usr/local/bin/start-pos-kiosk
 Hidden=false
 NoDisplay=false
@@ -443,7 +445,7 @@ alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 # Terminal customization
 PS1='\[\033[01;32m\]POS-FOCAL\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-echo "=== POS Admin Terminal (Ubuntu Focal - No Snap) ==="
+echo "=== POS Admin Terminal (Ubuntu Focal - No Snap - DISPLAY :1) ==="
 echo "Available commands:"
 echo "  edit-env      - Edit environment variables"
 echo "  setup-tailnet - Install and setup Tailscale" 
@@ -457,11 +459,13 @@ echo "  kiosk-mode    - Start POS kiosk mode"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
 echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
+echo "Using DISPLAY :1"
 echo "=========================="
 EOF
 
 sudo tee /home/posuser/.profile << 'EOF'
 export PATH="/usr/local/bin:$PATH"
+export DISPLAY=:1
 if [ ! -f ~/.hotkeys-setup ]; then
     /home/posuser/setup-hotkeys.sh
     touch ~/.hotkeys-setup
@@ -472,7 +476,7 @@ EOF
 sudo chown -R posuser:posuser /home/posuser
 sudo chmod +x /home/posuser/.profile
 
-# Configure LightDM for focal
+# Configure LightDM for focal with DISPLAY :1
 if [ -f /etc/lightdm/lightdm.conf ]; then
     sudo cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
 fi
@@ -482,6 +486,7 @@ sudo tee /etc/lightdm/lightdm.conf << 'EOF'
 autologin-user=posuser
 autologin-user-timeout=0
 user-session=xfce
+xserver-command=X :1 -auth /var/run/lightdm/root/:1
 EOF
 
 # XFCE power management
@@ -510,7 +515,7 @@ sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
 echo ""
-echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues) ==="
+echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues - DISPLAY :1) ==="
 echo ""
 echo "IMPORTANT: Reboot the system to start POS kiosk mode"
 echo "sudo reboot"
@@ -519,6 +524,7 @@ echo "=== SYSTEM INFORMATION ==="
 echo "• Ubuntu Focal (20.04) - No snap packages used"
 echo "• Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Fallback browser installed')"
 echo "• Desktop Environment: XFCE"
+echo "• Display: :1 (modified from :0)"
 echo "• Access URL: http://localhost:3000"
 echo "• POS User: posuser / posuser123"
 echo ""
