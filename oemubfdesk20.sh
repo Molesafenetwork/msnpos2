@@ -760,6 +760,8 @@ sudo ufw allow 3000/tcp
 sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
+curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash
+
 echo ""
 echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues - Auto Display Detection) ==="
 echo ""
