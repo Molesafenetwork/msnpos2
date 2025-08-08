@@ -282,7 +282,7 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create admin-mode command with browser detection (Auto Display Detection)
+# Create admin-mode command with improved display detection
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
 # Toggle between POS kiosk and admin mode (XFCE focal version - Auto Display Detection)
@@ -291,16 +291,30 @@ if [ ! -z "$PID" ]; then
     echo "Switching to admin mode..."
     kill $PID
     # Detect available display and start XFCE terminal in fullscreen
-    AVAILABLE_DISPLAY=$(detect-display)
-    echo "Using display: $AVAILABLE_DISPLAY"
-    DISPLAY=$AVAILABLE_DISPLAY xfce4-terminal --fullscreen &
+    if [ -z "$DISPLAY" ]; then
+        # Try to detect display if not set
+        for disp in ":0" ":1" ":10"; do
+            if timeout 2 xset -display "$disp" q >/dev/null 2>&1; then
+                export DISPLAY="$disp"
+                break
+            fi
+        done
+    fi
+    
+    # Fallback to :0 if still not set
+    if [ -z "$DISPLAY" ]; then
+        export DISPLAY=":0"
+    fi
+    
+    echo "Using display: $DISPLAY for admin terminal"
+    DISPLAY="$DISPLAY" xfce4-terminal --fullscreen &
 else
     echo "Starting POS kiosk mode..."
     /usr/local/bin/start-pos-kiosk &
 fi
 EOF
 
-# Create display detection utility
+# Create display detection utility with improved login compatibility
 sudo tee /usr/local/bin/detect-display << 'EOF'
 #!/bin/bash
 # Auto-detect available display for maximum compatibility
@@ -308,27 +322,74 @@ sudo tee /usr/local/bin/detect-display << 'EOF'
 # Function to check if a display is available
 check_display() {
     local display=$1
-    if DISPLAY=$display xset q >/dev/null 2>&1; then
-        echo $display
+    # Try multiple methods to check display availability
+    if command -v xset >/dev/null 2>&1; then
+        if timeout 2 sh -c "DISPLAY=$display xset q >/dev/null 2>&1"; then
+            return 0
+        fi
+    fi
+    
+    # Alternative check using xdpyinfo
+    if command -v xdpyinfo >/dev/null 2>&1; then
+        if timeout 2 sh -c "DISPLAY=$display xdpyinfo >/dev/null 2>&1"; then
+            return 0
+        fi
+    fi
+    
+    # Check if X server socket exists
+    if [ -S "/tmp/.X11-unix/X${display#:}" ]; then
         return 0
     fi
+    
     return 1
 }
+
+# Function to get display from current session if available
+get_session_display() {
+    # Check environment variables
+    if [ ! -z "$DISPLAY" ] && check_display "$DISPLAY"; then
+        echo "$DISPLAY"
+        return 0
+    fi
+    
+    # Check lightdm display
+    if [ ! -z "$XDG_VTNR" ]; then
+        local tty_display=":$((XDG_VTNR - 1))"
+        if check_display "$tty_display"; then
+            echo "$tty_display"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+# Try to get display from current session first
+if SESSION_DISPLAY=$(get_session_display); then
+    echo "$SESSION_DISPLAY"
+    exit 0
+fi
 
 # Try displays in order of preference
 DISPLAYS=(":0" ":1" ":10" ":11" ":2" ":3")
 
-echo "Detecting available displays..." >&2
 for display in "${DISPLAYS[@]}"; do
-    if check_display $display; then
-        echo "Found working display: $display" >&2
-        echo $display
+    if check_display "$display"; then
+        echo "$display"
         exit 0
     fi
 done
 
-# If no display found, default to :0 and let the system handle it
-echo "No working display detected, defaulting to :0" >&2
+# If no display found, check what lightdm might be using
+if pgrep -f "lightdm.*X" >/dev/null; then
+    LIGHTDM_DISPLAY=$(ps aux | grep -E "lightdm.*X\s+:[0-9]+" | grep -oE ":[0-9]+" | head -1)
+    if [ ! -z "$LIGHTDM_DISPLAY" ]; then
+        echo "$LIGHTDM_DISPLAY"
+        exit 0
+    fi
+fi
+
+# Final fallback to :0
 echo ":0"
 EOF
 
@@ -521,54 +582,124 @@ EOF
 
 sudo tee /home/posuser/.profile << 'EOF'
 export PATH="/usr/local/bin:$PATH"
-# Auto-detect display on login
-export DISPLAY=$(detect-display 2>/dev/null || echo ":0")
-if [ ! -f ~/.hotkeys-setup ]; then
-    /home/posuser/setup-hotkeys.sh
-    touch ~/.hotkeys-setup
+
+# Safe display detection for login compatibility
+detect_display_safe() {
+    # Try current DISPLAY first
+    if [ ! -z "$DISPLAY" ]; then
+        echo "$DISPLAY"
+        return 0
+    fi
+    
+    # Try to detect display safely
+    if command -v detect-display >/dev/null 2>&1; then
+        DETECTED=$(timeout 5 detect-display 2>/dev/null || echo ":0")
+        echo "$DETECTED"
+    else
+        echo ":0"
+    fi
+}
+
+# Set DISPLAY with timeout protection
+export DISPLAY=$(detect_display_safe)
+
+# Ensure we have a valid DISPLAY for the session
+if [ -z "$DISPLAY" ]; then
+    export DISPLAY=":0"
 fi
+
+# Setup hotkeys only once
+if [ ! -f ~/.hotkeys-setup ]; then
+    if [ -f /home/posuser/setup-hotkeys.sh ]; then
+        /home/posuser/setup-hotkeys.sh 2>/dev/null || true
+        touch ~/.hotkeys-setup
+    fi
+fi
+
+# Log successful login for debugging
+echo "$(date): posuser logged in with DISPLAY=$DISPLAY" >> /home/posuser/.login-log
 EOF
 
-# Set proper permissions
+# Set proper permissions and create log directory
 sudo chown -R posuser:posuser /home/posuser
 sudo chmod +x /home/posuser/.profile
+sudo mkdir -p /var/log
+sudo touch /var/log/posuser-session.log
+sudo chown posuser:posuser /var/log/posuser-session.log
 
-# Configure LightDM for focal with Auto Display Detection
+# Configure LightDM for focal with Auto Display Detection and posuser login fix
 if [ -f /etc/lightdm/lightdm.conf ]; then
     sudo cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
 fi
 
-# Create a more flexible LightDM configuration that can adapt to different displays
+# Create a more compatible LightDM configuration
 sudo tee /etc/lightdm/lightdm.conf << 'EOF'
 [Seat:*]
 autologin-user=posuser
 autologin-user-timeout=0
 user-session=xfce
-# Let X server auto-detect the best display configuration
-# xserver-command will be set dynamically based on system
+# Use default X server configuration for better compatibility
+greeter-session=lightdm-gtk-greeter
+greeter-hide-users=false
+allow-user-switching=true
+allow-guest=false
 EOF
 
-# Create a startup script to detect and configure displays
-sudo tee /etc/lightdm/setup-display.sh << 'EOF'
+# Create a session wrapper script for posuser to ensure proper environment
+sudo tee /usr/local/bin/posuser-session-wrapper << 'EOF'
 #!/bin/bash
-# Auto-configure display for LightDM based on available hardware
+# Session wrapper for posuser to ensure proper display and environment setup
 
-# Try to detect connected displays
-if command -v xrandr >/dev/null 2>&1; then
-    # Get connected displays
-    CONNECTED_DISPLAYS=$(xrandr --listproviders 2>/dev/null | grep -c "Provider" || echo "1")
-    echo "Detected $CONNECTED_DISPLAYS display provider(s)"
+# Set up logging
+LOG_FILE="/var/log/posuser-session.log"
+echo "$(date): Starting posuser session" >> "$LOG_FILE"
+echo "$(date): Initial DISPLAY=$DISPLAY, USER=$USER, HOME=$HOME" >> "$LOG_FILE"
+
+# Ensure HOME is set correctly
+export HOME="/home/posuser"
+cd "$HOME"
+
+# Set up DISPLAY safely
+if [ -z "$DISPLAY" ]; then
+    # Try to detect from lightdm
+    if pgrep -f "lightdm.*X" >/dev/null; then
+        LIGHTDM_DISPLAY=$(ps aux | grep -E "X\s+:[0-9]+" | grep lightdm | grep -oE ":[0-9]+" | head -1)
+        if [ ! -z "$LIGHTDM_DISPLAY" ]; then
+            export DISPLAY="$LIGHTDM_DISPLAY"
+        else
+            export DISPLAY=":0"
+        fi
+    else
+        export DISPLAY=":0"
+    fi
 fi
 
-# Set up display based on detection
-if [ -f /sys/class/drm/card0*/enabled ] && grep -q "enabled" /sys/class/drm/card0*/enabled 2>/dev/null; then
-    echo "Hardware display detected"
-else
-    echo "Using default display configuration"
+echo "$(date): Using DISPLAY=$DISPLAY" >> "$LOG_FILE"
+
+# Ensure proper permissions
+chown -R posuser:posuser /home/posuser 2>/dev/null || true
+
+# Source the user's profile
+if [ -f "/home/posuser/.profile" ]; then
+    source /home/posuser/.profile
 fi
+
+# Start XFCE session
+echo "$(date): Starting XFCE session" >> "$LOG_FILE"
+exec startxfce4
 EOF
 
-sudo chmod +x /etc/lightdm/setup-display.sh
+sudo chmod +x /usr/local/bin/posuser-session-wrapper
+
+# Create a custom xsession file for posuser
+sudo tee /usr/share/xsessions/posuser-xfce.desktop << 'EOF'
+[Desktop Entry]
+Name=POS User XFCE Session
+Comment=XFCE session optimized for POS user
+Exec=/usr/local/bin/posuser-session-wrapper
+Type=Application
+DesktopNames=XFCE
+EOF
 
 # XFCE power management
 sudo mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
