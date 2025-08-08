@@ -7,7 +7,42 @@ echo "--------------------------------------"
 echo "This script will start your POS server"
 echo "and optionally set it to start at login."
 echo
-
+echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - AUTO DISPLAY DETECTION                 "
+echo "@@@@@@@@@@    @@@@@@   @@@  @@@"       
+echo "@@@@@@@@@@@  @@@@@@@   @@@@ @@@"       
+echo "@@! @@! @@!  !@@       @@!@!@@@"       
+echo "!@! !@! !@!  !@!       !@!!@!@!"       
+echo "@!! !!@ @!@  !!@@!!    @!@ !!@!"        
+echo "!@!   ! !@!   !!@!!!   !@!  !!!"        
+echo "!!:     !!:       !:!  !!:  !!!"        
+echo ":!:     :!:      !:!   :!:  !:!"        
+echo ":::     ::   :::: ::    ::   ::"      
+echo " :      :    :: : :     ::    :"    
+                                       
+                                       
+echo "@@@@@@   @@@@@@@   @@@@@@@@  @@@  @@@"
+echo "@@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@ @@@" 
+echo "@@!  @@@  @@!  @@@  @@!       @@!@!@@@" 
+echo "!@!  @!@  !@!  @!@  !@!       !@!!@!@!" 
+echo "@!@  !@!  @!@@!@!   @!!!:!    @!@ !!@!"
+echo "!@!  !!!  !!@!!!    !!!!!:    !@!  !!!" 
+echo "!!:  !!!  !!:       !!:       !!:  !!!" 
+echo ":!:  !:!  :!:       :!:       :!:  !:!" 
+echo "::::: ::   ::       :: ::::   ::   ::" 
+echo " : :  :    :        : :: ::   ::    :"  
+                                       
+                                       
+echo "@@@@@@@    @@@@@@    @@@@@@"            
+echo "@@@@@@@@  @@@@@@@@  @@@@@@@"            
+echo "@@!  @@@  @@!  @@@  !@@"                
+echo "!@!  @!@  !@!  @!@  !@!"               
+echo "@!@@!@!   @!@  !@!  !!@@!!"             
+echo "!!@!!!    !@!  !!!   !!@!!!"            
+echo "!!:       !!:  !!!       !:!"           
+echo ":!:       :!:  !:!      !:!"            
+echo " ::       ::::: ::  :::: ::"            
+echo " :         : :  :   :: : :"             
+echo
 # Step 1: Check for POS folder
 if [ ! -d "$HOME/pos-system" ]; then
     echo "Error: pos-system folder not found in $HOME."
