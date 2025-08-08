@@ -57,6 +57,7 @@ fi
 # Update package lists only (no system upgrade)
 echo "Refreshing package lists (no system upgrade)..."
 # sudo apt update
+dpkg --configure -a 
 
 # Install essential packages for XFCE Desktop (focal compatible)
 echo "Installing essential packages for XFCE..."
