@@ -1,5 +1,5 @@
 #!/bin/bash
-# install-pos.sh - Installer for POS Startup Script (XFCE, Ubuntu 22)
+# init.sh - Installer for POS Startup Script (XFCE, Ubuntu 22)
 
 POSUSER="posuser"
 POS_HOME="/home/$POSUSER"
