@@ -1,69 +1,81 @@
 #!/bin/bash
-# POS Hotkey Helper for XFCE + Chromium Kiosk
-echo "installing requirements"
-sudo apt install xdotool wmctrl inotify-tools evince xbindkeys
+# pos-hotkeys.sh - POS Hotkeys Setup & Autostart for XFCE
 
-# CONFIG
-DOWNLOADS_DIR="$HOME/Downloads"       # Where invoices are saved
-VIEWER="evince"                        # PDF viewer
-KIOSK_WINDOW="Chromium"                # Window title to target
+# Required dependencies:
+# sudo apt install xdotool wmctrl xbindkeys evince -y
 
-# Function to send back/forward to Chromium
-send_back() {
-    xdotool search --name "$KIOSK_WINDOW" windowactivate --sync key "Alt+Left"
-}
-send_forward() {
-    xdotool search --name "$KIOSK_WINDOW" windowactivate --sync key "Alt+Right"
-}
+DOWNLOADS_DIR="$HOME/Downloads"
+VIEWER="evince"
+KIOSK_WINDOW="Chromium"
 
-# Function to show most recent invoice
-show_invoice() {
-    latest_file=$(ls -t "$DOWNLOADS_DIR" | head -n 1)
-    if [ -z "$latest_file" ]; then
-        echo "No invoice found."
-        return
-    fi
-    "$VIEWER" "$DOWNLOADS_DIR/$latest_file" &
-    VIEWER_PID=$!
-}
+# Kill any running xbindkeys first (to avoid duplicates)
+pkill xbindkeys 2>/dev/null
 
-# Function to close invoice
-close_invoice() {
-    if [ -n "$VIEWER_PID" ]; then
-        kill "$VIEWER_PID" 2>/dev/null
-        VIEWER_PID=""
+# Create or overwrite xbindkeys config file
+cat > "$HOME/.xbindkeysrc" <<'EOL'
+# Send Alt+Left (Back) to Chromium window
+"xdotool search --name Chromium windowactivate --sync key Alt+Left"
+    Left
+
+"xdotool search --name Chromium windowactivate --sync key Alt+Left"
+    z
+
+# Send Alt+Right (Forward) to Chromium window
+"xdotool search --name Chromium windowactivate --sync key Alt+Right"
+    Right
+
+"xdotool search --name Chromium windowactivate --sync key Alt+Right"
+    x
+
+# Show/hide invoice preview with I key
+# This script launches or kills the viewer
+
+bash -c '
+    # Find if viewer is running
+    PID=$(pgrep -f evince)
+    if [ -z "$PID" ]; then
+        # No viewer, open latest invoice
+        FILE=$(ls -t ~/Downloads | head -n1)
+        if [ -n "$FILE" ]; then
+            evince ~/Downloads/"$FILE" &
+        fi
     else
-        pkill -x "$VIEWER"
+        # Viewer running, kill it
+        kill $PID
     fi
-}
+'
+    i
 
-# Launch xbindkeys config
-cat > "$HOME/.xbindkeysrc" <<EOL
-# Back: Left Arrow
-"bash -c 'send_back'"
-   Left
-
-# Forward: Right Arrow
-"bash -c 'send_forward'"
-   Right
-
-# Back: Z key
-"bash -c 'send_back'"
-   z
-
-# Forward: X key
-"bash -c 'send_forward'"
-   x
-
-# Show/Hide Invoice: I key
-"bash -c 'if [ -z "\$VIEWER_PID" ]; then show_invoice; else close_invoice; fi'"
-   i
-
-# Close Invoice: Esc key
-"bash -c 'close_invoice'"
-   Escape
+# Close invoice viewer with Escape
+bash -c '
+    PID=$(pgrep -f evince)
+    if [ -n "$PID" ]; then
+        kill $PID
+    fi
+'
+    Escape
 EOL
+
+echo "xbindkeys config file created at ~/.xbindkeysrc"
 
 # Start xbindkeys in background
 xbindkeys
-echo "Hotkey listener started."
+
+echo "xbindkeys started."
+
+# Setup autostart for xbindkeys on login (XFCE)
+AUTOSTART_DIR="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
+
+cat > "$AUTOSTART_DIR/xbindkeys.desktop" <<EOL
+[Desktop Entry]
+Type=Application
+Name=xbindkeys
+Exec=xbindkeys
+Comment=Start xbindkeys for POS hotkeys
+X-GNOME-Autostart-enabled=true
+EOL
+
+echo "Autostart entry created for xbindkeys."
+
+echo "POS hotkeys setup complete and will persist on reboot."
