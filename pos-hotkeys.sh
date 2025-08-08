@@ -1,112 +1,182 @@
 #!/bin/bash
-# remove-pos-hotkeys.sh - Remove POS Hotkeys and Restore Normal Key Function
-echo "Removing POS hotkeys and restoring Z, X, and I to normal keyboard function..."
+# improved-pos-hotkeys.sh - Enhanced POS Hotkeys Setup & Autostart for XFCE
+echo "Setting up enhanced hotkeys: Q (back), W (forward), R (toggle invoice viewer)"
+echo "Installing required packages..."
 
-# Kill any running xbindkeys processes
-echo "Stopping xbindkeys..."
+# Install required packages
+sudo apt update
+sudo apt install xdotool wmctrl xbindkeys evince -y
+
+# Configuration variables
+DOWNLOADS_DIR="$HOME/Downloads"
+VIEWER="evince"
+KIOSK_WINDOW="Chromium"
+
+# Kill any running xbindkeys first to avoid duplicates
+echo "Stopping existing xbindkeys..."
 pkill xbindkeys 2>/dev/null
-if [ $? -eq 0 ]; then
-    echo "✓ xbindkeys processes stopped"
-else
-    echo "✓ No running xbindkeys processes found"
-fi
-
-# Wait a moment for processes to fully terminate
 sleep 1
 
-# Remove or backup the xbindkeys configuration file
-if [ -f "$HOME/.xbindkeysrc" ]; then
-    echo "Removing xbindkeys configuration..."
-    # Create a backup first (optional)
-    if [ ! -f "$HOME/.xbindkeysrc.backup" ]; then
-        cp "$HOME/.xbindkeysrc" "$HOME/.xbindkeysrc.backup"
-        echo "✓ Backup created at ~/.xbindkeysrc.backup"
+# Create or overwrite xbindkeys config file
+echo "Creating xbindkeys configuration..."
+cat > "$HOME/.xbindkeysrc" <<'EOL'
+# Navigate Back in Chromium with Q key
+"bash -c '
+    if xdotool search --name \"Chromium\" windowactivate --sync 2>/dev/null; then
+        xdotool key Alt+Left
+    else
+        notify-send \"Hotkey\" \"Chromium window not found\" 2>/dev/null || echo \"Chromium window not found\"
     fi
+'"
+    q
+
+# Navigate Forward in Chromium with W key  
+"bash -c '
+    if xdotool search --name \"Chromium\" windowactivate --sync 2>/dev/null; then
+        xdotool key Alt+Right
+    else
+        notify-send \"Hotkey\" \"Chromium window not found\" 2>/dev/null || echo \"Chromium window not found\"
+    fi
+'"
+    w
+
+# Toggle Invoice Viewer with R key
+"bash -c '
+    EVINCE_PID=$(pgrep -f \"evince.*\.pdf\")
     
-    # Remove the active configuration
-    rm "$HOME/.xbindkeysrc"
-    echo "✓ xbindkeys configuration file removed"
+    if [ -n \"$EVINCE_PID\" ]; then
+        # Close existing evince instance
+        kill $EVINCE_PID
+        notify-send \"Invoice\" \"PDF viewer closed\" 2>/dev/null || echo \"PDF viewer closed\"
+    else
+        # Find most recent PDF in Downloads
+        LATEST_PDF=$(find \"$HOME/Downloads\" -name \"*.pdf\" -type f -printf \"%T@ %p\n\" 2>/dev/null | sort -nr | head -n1 | cut -d\" \" -f2-)
+        
+        if [ -n \"$LATEST_PDF\" ] && [ -f \"$LATEST_PDF\" ]; then
+            evince \"$LATEST_PDF\" &
+            notify-send \"Invoice\" \"Opening: $(basename \"$LATEST_PDF\")\" 2>/dev/null || echo \"Opening: $(basename \"$LATEST_PDF\")\"
+        else
+            notify-send \"Invoice\" \"No PDF files found in Downloads\" 2>/dev/null || echo \"No PDF files found in Downloads\"
+        fi
+    fi
+'"
+    r
+
+# Emergency close all PDF viewers with Escape key
+"bash -c '
+    EVINCE_PIDS=$(pgrep -f evince)
+    if [ -n \"$EVINCE_PIDS\" ]; then
+        killall evince 2>/dev/null
+        notify-send \"Emergency\" \"All PDF viewers closed\" 2>/dev/null || echo \"All PDF viewers closed\"
+    fi
+'"
+    Escape
+
+# Reload hotkeys configuration with F5
+"bash -c '
+    pkill xbindkeys 2>/dev/null
+    sleep 0.5
+    xbindkeys
+    notify-send \"Hotkeys\" \"Configuration reloaded\" 2>/dev/null || echo \"Hotkeys reloaded\"
+'"
+    F5
+EOL
+
+echo "xbindkeys configuration created at ~/.xbindkeysrc"
+
+# Test xbindkeys configuration
+echo "Testing xbindkeys configuration..."
+if xbindkeys --test 2>/dev/null; then
+    echo "Configuration test passed."
 else
-    echo "✓ No xbindkeys configuration file found"
+    echo "Warning: Configuration test failed, but continuing anyway..."
 fi
 
-# Remove autostart entry
-AUTOSTART_FILE="$HOME/.config/autostart/xbindkeys.desktop"
-if [ -f "$AUTOSTART_FILE" ]; then
-    rm "$AUTOSTART_FILE"
-    echo "✓ Autostart entry removed"
+# Start xbindkeys
+echo "Starting xbindkeys..."
+xbindkeys
+if [ $? -eq 0 ]; then
+    echo "xbindkeys started successfully."
 else
-    echo "✓ No autostart entry found"
+    echo "Error starting xbindkeys. Please check the configuration."
+    exit 1
 fi
 
-# Close any running evince processes that might have been opened by the hotkeys
-echo "Closing any PDF viewers opened by hotkeys..."
-EVINCE_PIDS=$(pgrep -f evince)
-if [ -n "$EVINCE_PIDS" ]; then
-    killall evince 2>/dev/null
-    echo "✓ PDF viewers closed"
-else
-    echo "✓ No PDF viewers running"
-fi
+# Setup autostart for xbindkeys on login (XFCE)
+echo "Setting up autostart..."
+AUTOSTART_DIR="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
 
-# Remove control script if it exists (from the enhanced version)
-if [ -f "$HOME/pos-hotkeys-control.sh" ]; then
-    rm "$HOME/pos-hotkeys-control.sh"
-    echo "✓ Control script removed"
-fi
+cat > "$AUTOSTART_DIR/xbindkeys.desktop" <<EOL
+[Desktop Entry]
+Type=Application
+Name=Enhanced POS Hotkeys
+Exec=bash -c 'sleep 3 && xbindkeys'
+Comment=Start xbindkeys for enhanced POS hotkeys (Q=back, W=forward, R=toggle invoice)
+X-GNOME-Autostart-enabled=true
+Hidden=false
+EOL
 
-# Verify xbindkeys is not running
+echo "Autostart entry created for xbindkeys."
+
+# Create a helper script for manual control
+cat > "$HOME/pos-hotkeys-control.sh" <<'EOL'
+#!/bin/bash
+# Helper script to control POS hotkeys
+
+case "$1" in
+    start)
+        pkill xbindkeys 2>/dev/null
+        sleep 0.5
+        xbindkeys
+        echo "Hotkeys started"
+        ;;
+    stop)
+        pkill xbindkeys 2>/dev/null
+        echo "Hotkeys stopped"
+        ;;
+    restart)
+        pkill xbindkeys 2>/dev/null
+        sleep 0.5
+        xbindkeys
+        echo "Hotkeys restarted"
+        ;;
+    status)
+        if pgrep xbindkeys > /dev/null; then
+            echo "Hotkeys are running (PID: $(pgrep xbindkeys))"
+        else
+            echo "Hotkeys are not running"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        echo "Hotkey bindings:"
+        echo "  Q - Navigate back in Chromium"
+        echo "  W - Navigate forward in Chromium" 
+        echo "  R - Toggle latest PDF invoice viewer"
+        echo "  Escape - Emergency close all PDF viewers"
+        echo "  F5 - Reload hotkey configuration"
+        ;;
+esac
+EOL
+
+chmod +x "$HOME/pos-hotkeys-control.sh"
+echo "Control script created at ~/pos-hotkeys-control.sh"
+
+# Final status check
 sleep 1
 if pgrep xbindkeys > /dev/null; then
-    echo "⚠ Warning: xbindkeys is still running. Attempting force kill..."
-    pkill -9 xbindkeys 2>/dev/null
-    sleep 1
-    if pgrep xbindkeys > /dev/null; then
-        echo "❌ Error: Could not stop xbindkeys. You may need to restart your session."
-    else
-        echo "✓ xbindkeys force stopped"
-    fi
-fi
-
-# Test that keys are working normally
-echo ""
-echo "Testing key restoration..."
-echo "Keys Z, X, and I should now work normally for typing."
-echo ""
-
-# Optional: Show what was removed
-echo "Summary of changes reverted:"
-echo "  - Z key: Restored to normal typing (was: Chromium back navigation)"
-echo "  - X key: Restored to normal typing (was: Chromium forward navigation)"
-echo "  - I key: Restored to normal typing (was: Toggle PDF invoice viewer)"
-echo "  - Escape key: Restored to normal function (was: Close PDF viewer)"
-echo ""
-
-# Final verification
-echo "Verification:"
-if [ ! -f "$HOME/.xbindkeysrc" ]; then
-    echo "✓ Configuration file removed"
+    echo ""
+    echo "✅ Setup complete! Enhanced POS hotkeys are now active:"
+    echo "   Q - Navigate back in Chromium"
+    echo "   W - Navigate forward in Chromium"
+    echo "   R - Toggle latest PDF invoice viewer"
+    echo "   Escape - Emergency close all PDF viewers"
+    echo "   F5 - Reload hotkey configuration"
+    echo ""
+    echo "Control script available: ~/pos-hotkeys-control.sh {start|stop|restart|status}"
+    echo "Hotkeys will automatically start on system boot."
 else
-    echo "❌ Configuration file still exists"
+    echo "❌ Warning: xbindkeys may not be running properly."
+    echo "Try running: ~/pos-hotkeys-control.sh start"
 fi
-
-if [ ! -f "$AUTOSTART_FILE" ]; then
-    echo "✓ Autostart entry removed"
-else
-    echo "❌ Autostart entry still exists"
-fi
-
-if ! pgrep xbindkeys > /dev/null; then
-    echo "✓ xbindkeys not running"
-else
-    echo "❌ xbindkeys still running"
-fi
-
-echo ""
-echo "🎉 POS hotkeys removal complete!"
-echo ""
-echo "Your keyboard keys Z, X, and I are now restored to normal function."
-echo "The hotkeys will not start automatically on next boot."
-echo ""
-echo "If you backed up your configuration, it's saved as ~/.xbindkeysrc.backup"
-echo "You can restore hotkeys later by renaming it back to ~/.xbindkeysrc and running 'xbindkeys'"
