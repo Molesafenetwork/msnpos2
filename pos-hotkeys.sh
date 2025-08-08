@@ -4,7 +4,7 @@ echo "Setting up enhanced hotkeys: Q (back), W (forward), R (toggle invoice view
 echo "Installing required packages..."
 
 # Install required packages
-sudo apt update
+# sudo apt update
 sudo apt install xdotool wmctrl xbindkeys evince -y
 
 # Configuration variables
