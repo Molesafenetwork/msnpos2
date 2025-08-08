@@ -1,52 +1,39 @@
 #!/bin/bash
 # pos-hotkeys.sh - POS Hotkeys Setup & Autostart for XFCE
-
-# Required dependencies:
-sudo apt install xdotool wmctrl xbindkeys evince -y
+# Only binds Z (back) and X (forward) to Chromium navigation
 
 DOWNLOADS_DIR="$HOME/Downloads"
 VIEWER="evince"
 KIOSK_WINDOW="Chromium"
 
-# Kill any running xbindkeys first (to avoid duplicates)
+# Kill any running xbindkeys first to avoid duplicates
 pkill xbindkeys 2>/dev/null
 
-# Create or overwrite xbindkeys config file
+# Create or overwrite xbindkeys config file with ONLY Z and X bindings
 cat > "$HOME/.xbindkeysrc" <<'EOL'
-# Send Alt+Left (Back) to Chromium window
-"xdotool search --name Chromium windowactivate --sync key Alt+Left"
-    Left
-
+# Send Alt+Left (Back) to Chromium window on Z key
 "xdotool search --name Chromium windowactivate --sync key Alt+Left"
     z
 
-# Send Alt+Right (Forward) to Chromium window
-"xdotool search --name Chromium windowactivate --sync key Alt+Right"
-    Right
-
+# Send Alt+Right (Forward) to Chromium window on X key
 "xdotool search --name Chromium windowactivate --sync key Alt+Right"
     x
 
 # Show/hide invoice preview with I key
-# This script launches or kills the viewer
-
 bash -c '
-    # Find if viewer is running
     PID=$(pgrep -f evince)
     if [ -z "$PID" ]; then
-        # No viewer, open latest invoice
         FILE=$(ls -t ~/Downloads | head -n1)
         if [ -n "$FILE" ]; then
             evince ~/Downloads/"$FILE" &
         fi
     else
-        # Viewer running, kill it
         kill $PID
     fi
 '
     i
 
-# Close invoice viewer with Escape
+# Close invoice viewer with Escape key
 bash -c '
     PID=$(pgrep -f evince)
     if [ -n "$PID" ]; then
@@ -56,7 +43,7 @@ bash -c '
     Escape
 EOL
 
-echo "xbindkeys config file created at ~/.xbindkeysrc"
+echo "xbindkeys config file created at ~/.xbindkeysrc with Z/X only for navigation."
 
 # Start xbindkeys in background
 xbindkeys
