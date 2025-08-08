@@ -2,7 +2,7 @@
 # pos-hotkeys.sh - POS Hotkeys Setup & Autostart for XFCE
 
 # Required dependencies:
-# sudo apt install xdotool wmctrl xbindkeys evince -y
+sudo apt install xdotool wmctrl xbindkeys evince -y
 
 DOWNLOADS_DIR="$HOME/Downloads"
 VIEWER="evince"
