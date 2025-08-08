@@ -3,7 +3,7 @@
 # NO SYSTEM UPGRADE - Uses existing packages where possible
 # Compatible with RK3566 chipset and XFCE Desktop Environment
 # Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk20.sh | bash
-set -e
+#set -e
 
 echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP)                 "
 
