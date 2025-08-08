@@ -1,7 +1,8 @@
 #!/bin/bash
 # pos-hotkeys.sh - POS Hotkeys Setup & Autostart for XFCE
-# Only binds Z (back) and X (forward) to Chromium navigation
+echo  "binds Z (back) and X (forward) to Chromium navigation and i to open invoice pdfs"
 
+sudo apt install xdotool wmctrl xbindkeys evince -y
 DOWNLOADS_DIR="$HOME/Downloads"
 VIEWER="evince"
 KIOSK_WINDOW="Chromium"
