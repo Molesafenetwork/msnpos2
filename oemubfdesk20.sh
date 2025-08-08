@@ -29,7 +29,8 @@ echo "Installing essential packages for XFCE..."
 sudo apt install -y curl git unclutter sed nano \
     wmctrl xdotool lightdm x11-utils xfce4-session \
     systemd-timesyncd openssh-server build-essential ufw \
-    xfce4-terminal xfce4-panel xfce4-settings xinit xorg snapd
+    xfce4-terminal xfce4-panel xfce4-settings xinit xorg snapd \
+    npm
 
 # Install browser - try multiple options, avoid snap
 echo "Installing web browser (avoiding snap)..."
