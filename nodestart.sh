@@ -8,23 +8,13 @@ echo "This script will start your POS server"
 echo "and optionally set it to start at login."
 echo
 
-# Go to POS folder
+# Step 1: Check for POS folder
 if [ ! -d "$HOME/pos-system" ]; then
     echo "Error: pos-system folder not found in $HOME."
     exit 1
 fi
-cd "$HOME/pos-system" || exit 1
-echo "Moved into $(pwd)"
 
-# Start POS server in background
-echo "Starting POS server..."
-node server.js &
-SERVER_PID=$!
-echo "POS server running in background (PID: $SERVER_PID)"
-echo "Press CTRL+C to stop."
-
-echo
-# Ask about auto-start
+# Step 2: Ask about auto-start BEFORE starting the server
 while true; do
     read -rp "Do you want to run this POS server every time you log in? (y/n): " choice
     case "$choice" in
@@ -49,4 +39,12 @@ EOL
     esac
 done
 
-echo "Done."
+# Step 3: Start server and show logs
+echo
+echo "Starting POS server..."
+cd "$HOME/pos-system" || exit 1
+echo "--------------------------------------"
+echo " Press CTRL+C to stop the server."
+echo " Server logs will appear below:"
+echo "--------------------------------------"
+node server.js
