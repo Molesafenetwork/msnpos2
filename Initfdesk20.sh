@@ -2,8 +2,8 @@
 # Orange Pi 3B POS System Setup Script for Ubuntu Focal (20.04)
 # NO SYSTEM UPGRADE - Uses existing packages where possible
 # Compatible with RK3566 chipset and XFCE Desktop Environment
-# Modified to use DISPLAY :1
-# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/oemubfdesk20.sh | bash
+# THIS IS ONLY FOR THE ORANGEPI 3B RUNNING UBUNTU FOCAL 20.04 LINUX KERNAL 5
+# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/initfdesk20.sh | bash
 set -e
 
 echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - AUTO DISPLAY DETECTION                 "
