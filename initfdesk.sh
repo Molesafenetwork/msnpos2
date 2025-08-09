@@ -3,7 +3,7 @@
 # NO SYSTEM UPGRADE - Uses existing packages where possible
 # Compatible with RK3566 chipset and XFCE Desktop Environment
 # THIS IS ONLY FOR THE ORANGEPI 3B RUNNING UBUNTU FOCAL 20.04 LINUX KERNAL 5
-# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/initfdesk.sh | bash
+# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/initfdesk20.sh | bash
 set -e
 
 echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - AUTO DISPLAY DETECTION                 "
@@ -56,7 +56,7 @@ fi
 
 # Update package lists only (no system upgrade)
 echo "Refreshing package lists (no system upgrade)..."
-sudo apt update
+# sudo apt update
 sudo dpkg --configure -a 
 
 # Install essential packages for XFCE Desktop (focal compatible)
@@ -65,7 +65,7 @@ sudo apt install -y curl git unclutter sed nano \
     wmctrl xdotool lightdm x11-utils xfce4-session \
     systemd-timesyncd openssh-server build-essential ufw \
     xfce4-terminal xfce4-panel xfce4-settings xinit xorg snapd \
-    npm 
+    npm nvm
 
 # Install browser - try multiple options, avoid snap
 echo "Installing web browser (avoiding snap)..."
@@ -420,160 +420,6 @@ fi
 rm -rf "$TEMP_DIR"
 EOF
 
-# Create the new cleanup-pos command
-sudo tee /usr/local/bin/cleanup-pos << 'EOF'
-#!/bin/bash
-# Remove obsolete files that no longer exist in the GitHub repository
-echo "🧹 Starting POS system cleanup..."
-
-POS_DIR="/home/posuser/pos-system"
-BACKUP_DIR="/home/posuser/cleanup-backup-$(date +%Y%m%d-%H%M%S)"
-TEMP_DIR="/tmp/pos-cleanup-check"
-
-if [ ! -d "$POS_DIR" ]; then
-    echo "❌ POS system directory not found at $POS_DIR"
-    exit 1
-fi
-
-# Create temporary directory for GitHub comparison
-rm -rf "$TEMP_DIR"
-mkdir -p "$TEMP_DIR"
-
-echo "📥 Fetching latest repository structure from GitHub..."
-cd "$TEMP_DIR"
-git clone https://github.com/Molesafenetwork/msnpos2.git repo 2>/dev/null
-
-if [ ! -d "$TEMP_DIR/repo" ]; then
-    echo "❌ Failed to fetch repository from GitHub"
-    exit 1
-fi
-
-echo "🔍 Scanning for obsolete files..."
-
-cd "$POS_DIR"
-REMOVED_COUNT=0
-PROTECTED_COUNT=0
-SKIPPED_COUNT=0
-
-# Create backup directory for deleted files
-mkdir -p "$BACKUP_DIR"
-
-# Find all files in the local POS system
-find . -type f -not -path "./.git/*" | sort | while read -r local_file; do
-    # Skip always-protected files and directories
-    if [[ "$local_file" =~ ^\./(\.env|public/\.data/|\.git/) ]]; then
-        continue
-    fi
-    
-    # Check if file exists in GitHub repo
-    github_file="$TEMP_DIR/repo/$local_file"
-    if [ ! -f "$github_file" ]; then
-        # File exists locally but not in GitHub repo
-        echo ""
-        echo "🗑️  Obsolete file found: $local_file"
-        echo "   This file exists in your POS system but not in the GitHub repository."
-        
-        # Check if it's a common file type that might be important
-        if [[ "$local_file" =~ \.(log|bak|backup|old|tmp)$ ]]; then
-            echo "   💡 This appears to be a temporary/backup file"
-        elif [[ "$local_file" =~ \.(js|json|html|css|md|txt)$ ]]; then
-            echo "   ⚠️  This is a code/content file - could be a local customization"
-        fi
-        
-        # Show file info
-        file_size=$(du -h "$local_file" 2>/dev/null | cut -f1)
-        file_date=$(stat -c "%y" "$local_file" 2>/dev/null | cut -d. -f1)
-        echo "   📊 Size: $file_size | Modified: $file_date"
-        
-        # Ask user for confirmation
-        while true; do
-            read -p "   ❓ Remove this file? [y/n/s(kip all remaining)/q(quit)]: " response
-            case $response in
-                [Yy]* )
-                    # Create backup first
-                    backup_path="$BACKUP_DIR$(dirname "/$local_file")"
-                    mkdir -p "$backup_path"
-                    cp "$local_file" "$backup_path/" 2>/dev/null
-                    
-                    # Remove the file
-                    rm "$local_file"
-                    echo "   ✅ Removed (backed up to $BACKUP_DIR)"
-                    REMOVED_COUNT=$((REMOVED_COUNT + 1))
-                    break
-                    ;;
-                [Nn]* )
-                    echo "   ⏭️  Kept file"
-                    PROTECTED_COUNT=$((PROTECTED_COUNT + 1))
-                    break
-                    ;;
-                [Ss]* )
-                    echo "   ⏭️  Skipping all remaining files"
-                    echo ""
-                    echo "📊 Cleanup Summary (partial):"
-                    echo "  Files removed:    $REMOVED_COUNT"
-                    echo "  Files protected:  $PROTECTED_COUNT"
-                    echo "  Files skipped:    [remaining files]"
-                    echo ""
-                    echo "💾 Backup location: $BACKUP_DIR"
-                    rm -rf "$TEMP_DIR"
-                    exit 0
-                    ;;
-                [Qq]* )
-                    echo "   🛑 Cleanup cancelled"
-                    echo ""
-                    echo "📊 Cleanup Summary (partial):"
-                    echo "  Files removed:    $REMOVED_COUNT"
-                    echo "  Files protected:  $PROTECTED_COUNT"
-                    echo ""
-                    if [ "$REMOVED_COUNT" -gt 0 ]; then
-                        echo "💾 Backup location: $BACKUP_DIR"
-                    fi
-                    rm -rf "$TEMP_DIR"
-                    exit 0
-                    ;;
-                * )
-                    echo "   Please answer y(es), n(o), s(kip all), or q(uit)."
-                    ;;
-            esac
-        done
-    fi
-done
-
-# Clean up empty directories (but not protected ones)
-echo ""
-echo "🗂️  Removing empty directories..."
-find . -type d -empty -not -path "./.git/*" -not -path "./public/.data*" 2>/dev/null | while read -r empty_dir; do
-    if [ "$empty_dir" != "." ] && [ "$empty_dir" != "./public/.data" ]; then
-        echo "   📁 Removed empty directory: $empty_dir"
-        rmdir "$empty_dir" 2>/dev/null || true
-    fi
-done
-
-echo ""
-echo "✅ Cleanup completed!"
-echo ""
-echo "📊 Final Summary:"
-echo "  Files removed:     $REMOVED_COUNT"
-echo "  Files protected:   $PROTECTED_COUNT"
-echo "  Always protected:  .env, public/.data/, .git/"
-echo ""
-
-if [ "$REMOVED_COUNT" -gt 0 ]; then
-    echo "💾 Backup saved at: $BACKUP_DIR"
-    echo "💡 To restore a file: cp $BACKUP_DIR/path/to/file $POS_DIR/path/to/file"
-else
-    echo "🎉 No files were removed - your system is clean!"
-    # Remove empty backup directory
-    rmdir "$BACKUP_DIR" 2>/dev/null || true
-fi
-
-# Cleanup temporary directory
-rm -rf "$TEMP_DIR"
-
-echo ""
-echo "🔄 Consider running 'restart-pos' if you removed any important files"
-EOF
-
 # Create the new update-pos command
 sudo tee /usr/local/bin/update-pos << 'EOF'
 #!/bin/bash
@@ -731,82 +577,6 @@ else
     echo "Starting POS kiosk mode..."
     /usr/local/bin/start-pos-kiosk &
 fi
-EOF
-
-# Change SESSION_SECRET in POS system and restart server
-sudo tee /usr/local/bin/change-session-secret << 'EOF'
-#!/bin/bash
-# Safely change SESSION_SECRET and restart POS system
-
-POS_DIR="/home/posuser/pos-system"
-ENV_FILE="$POS_DIR/.env"
-
-if [ ! -f "$ENV_FILE" ]; then
-    echo "❌ .env file not found at $ENV_FILE"
-    exit 1
-fi
-
-echo "🔐 Changing SESSION_SECRET for POS system..."
-echo ""
-echo "Current session secret:"
-grep "SESSION_SECRET=" "$ENV_FILE" | sed 's/SESSION_SECRET=//' || echo "Not found"
-echo ""
-
-# Generate a new session secret
-echo "Generating new session secret..."
-NEW_SECRET=$(openssl rand -hex 32 2>/dev/null || date +%s%N | sha256sum | head -c 32)
-
-echo "New session secret will be: $NEW_SECRET"
-echo ""
-read -p "❓ Apply this new session secret? [y/N]: " confirm
-
-if [[ $confirm =~ ^[Yy]$ ]]; then
-    echo "🔄 Updating .env file..."
-    
-    # Backup current .env
-    sudo -u posuser cp "$ENV_FILE" "$ENV_FILE.backup.$(date +%Y%m%d-%H%M%S)"
-    
-    # Update SESSION_SECRET in .env
-    if grep -q "SESSION_SECRET=" "$ENV_FILE"; then
-        # Replace existing SESSION_SECRET
-        sudo -u posuser sed -i "s/^SESSION_SECRET=.*/SESSION_SECRET=$NEW_SECRET/" "$ENV_FILE"
-        echo "✅ Updated existing SESSION_SECRET"
-    else
-        # Add SESSION_SECRET if it doesn't exist
-        echo "SESSION_SECRET=$NEW_SECRET" | sudo -u posuser tee -a "$ENV_FILE" > /dev/null
-        echo "✅ Added new SESSION_SECRET"
-    fi
-    
-    echo "🔄 Restarting POS system to apply changes..."
-    sudo systemctl restart pos-system
-    
-    # Wait a moment for the service to start
-    sleep 3
-    
-    # Check if service started successfully
-    if sudo systemctl is-active --quiet pos-system; then
-        echo "✅ POS system restarted successfully!"
-        echo ""
-        echo "🌐 Your POS system is now using the new session secret"
-        echo "🔒 All existing user sessions have been invalidated"
-        echo "📍 Access your POS at: http://localhost:3000"
-        echo ""
-        echo "💡 Users will need to log in again with the new session"
-    else
-        echo "❌ Failed to restart POS system!"
-        echo "🔄 Restoring backup and restarting..."
-        sudo -u posuser cp "$ENV_FILE.backup.$(date +%Y%m%d-%H%M%S)" "$ENV_FILE"
-        sudo systemctl restart pos-system
-        echo "⚠️ Backup restored. Check pos-logs for errors."
-    fi
-    
-else
-    echo "❌ Session secret change cancelled"
-fi
-
-echo ""
-echo "💡 To check current configuration: check-env"
-echo "💡 To view system logs: pos-logs"
 EOF
 
 # Create display detection utility with improved login compatibility
@@ -1051,10 +821,9 @@ alias generate-key='cd /home/posuser/pos-system && node -e "const CryptoJS = req
 alias check-env='cat /home/posuser/pos-system/.env'
 alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
 alias admin-mode='/usr/local/bin/admin-mode'
-alias change-session-secret='/usr/local/bin/change-session-secret'
 alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 alias update-pos='/usr/local/bin/update-pos'
-alias cleanup-pos='/usr/local/bin/cleanup-pos'
+alias check-updates='/usr/local/bin/check-updates'
 
 # Terminal customization
 PS1='\[\033[01;32m\]POS-FOCAL\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
@@ -1071,10 +840,8 @@ echo "  pdf-storage    - Check PDF storage directory"
 echo "  admin-mode     - Toggle between kiosk and admin mode"
 echo "  kiosk-mode     - Start POS kiosk mode"
 echo "  detect-display - Check current display configuration"
-echo "  change-session-secret - Change SESSION_SECRET and restart server"
 echo "  update-pos     - Safely update POS from GitHub (preserves local changes)"
 echo "  check-updates  - Check for available updates without applying"
-echo "  cleanup-pos    - Remove obsolete files not in GitHub repo (interactive)"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
 echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
@@ -1254,6 +1021,6 @@ echo "=== NEW UPDATE FEATURES ==="
 echo "• check-updates  - Check for available GitHub updates"
 echo "• update-pos     - Safely update while preserving local changes"
 echo "• Protected:     .env file and public/.data/ directory"
-echo "• cleanup-pos    - Interactively remove obsolete files not in GitHub"
+echo "• Smart Logic:   Keeps locally modified files if newer than GitHub"
 echo ""
 echo "System ready for reboot!"
