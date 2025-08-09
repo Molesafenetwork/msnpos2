@@ -420,6 +420,160 @@ fi
 rm -rf "$TEMP_DIR"
 EOF
 
+# Create the new cleanup-pos command
+sudo tee /usr/local/bin/cleanup-pos << 'EOF'
+#!/bin/bash
+# Remove obsolete files that no longer exist in the GitHub repository
+echo "🧹 Starting POS system cleanup..."
+
+POS_DIR="/home/posuser/pos-system"
+BACKUP_DIR="/home/posuser/cleanup-backup-$(date +%Y%m%d-%H%M%S)"
+TEMP_DIR="/tmp/pos-cleanup-check"
+
+if [ ! -d "$POS_DIR" ]; then
+    echo "❌ POS system directory not found at $POS_DIR"
+    exit 1
+fi
+
+# Create temporary directory for GitHub comparison
+rm -rf "$TEMP_DIR"
+mkdir -p "$TEMP_DIR"
+
+echo "📥 Fetching latest repository structure from GitHub..."
+cd "$TEMP_DIR"
+git clone https://github.com/Molesafenetwork/msnpos2.git repo 2>/dev/null
+
+if [ ! -d "$TEMP_DIR/repo" ]; then
+    echo "❌ Failed to fetch repository from GitHub"
+    exit 1
+fi
+
+echo "🔍 Scanning for obsolete files..."
+
+cd "$POS_DIR"
+REMOVED_COUNT=0
+PROTECTED_COUNT=0
+SKIPPED_COUNT=0
+
+# Create backup directory for deleted files
+mkdir -p "$BACKUP_DIR"
+
+# Find all files in the local POS system
+find . -type f -not -path "./.git/*" | sort | while read -r local_file; do
+    # Skip always-protected files and directories
+    if [[ "$local_file" =~ ^\./(\.env|public/\.data/|\.git/) ]]; then
+        continue
+    fi
+    
+    # Check if file exists in GitHub repo
+    github_file="$TEMP_DIR/repo/$local_file"
+    if [ ! -f "$github_file" ]; then
+        # File exists locally but not in GitHub repo
+        echo ""
+        echo "🗑️  Obsolete file found: $local_file"
+        echo "   This file exists in your POS system but not in the GitHub repository."
+        
+        # Check if it's a common file type that might be important
+        if [[ "$local_file" =~ \.(log|bak|backup|old|tmp)$ ]]; then
+            echo "   💡 This appears to be a temporary/backup file"
+        elif [[ "$local_file" =~ \.(js|json|html|css|md|txt)$ ]]; then
+            echo "   ⚠️  This is a code/content file - could be a local customization"
+        fi
+        
+        # Show file info
+        file_size=$(du -h "$local_file" 2>/dev/null | cut -f1)
+        file_date=$(stat -c "%y" "$local_file" 2>/dev/null | cut -d. -f1)
+        echo "   📊 Size: $file_size | Modified: $file_date"
+        
+        # Ask user for confirmation
+        while true; do
+            read -p "   ❓ Remove this file? [y/n/s(kip all remaining)/q(quit)]: " response
+            case $response in
+                [Yy]* )
+                    # Create backup first
+                    backup_path="$BACKUP_DIR$(dirname "/$local_file")"
+                    mkdir -p "$backup_path"
+                    cp "$local_file" "$backup_path/" 2>/dev/null
+                    
+                    # Remove the file
+                    rm "$local_file"
+                    echo "   ✅ Removed (backed up to $BACKUP_DIR)"
+                    REMOVED_COUNT=$((REMOVED_COUNT + 1))
+                    break
+                    ;;
+                [Nn]* )
+                    echo "   ⏭️  Kept file"
+                    PROTECTED_COUNT=$((PROTECTED_COUNT + 1))
+                    break
+                    ;;
+                [Ss]* )
+                    echo "   ⏭️  Skipping all remaining files"
+                    echo ""
+                    echo "📊 Cleanup Summary (partial):"
+                    echo "  Files removed:    $REMOVED_COUNT"
+                    echo "  Files protected:  $PROTECTED_COUNT"
+                    echo "  Files skipped:    [remaining files]"
+                    echo ""
+                    echo "💾 Backup location: $BACKUP_DIR"
+                    rm -rf "$TEMP_DIR"
+                    exit 0
+                    ;;
+                [Qq]* )
+                    echo "   🛑 Cleanup cancelled"
+                    echo ""
+                    echo "📊 Cleanup Summary (partial):"
+                    echo "  Files removed:    $REMOVED_COUNT"
+                    echo "  Files protected:  $PROTECTED_COUNT"
+                    echo ""
+                    if [ "$REMOVED_COUNT" -gt 0 ]; then
+                        echo "💾 Backup location: $BACKUP_DIR"
+                    fi
+                    rm -rf "$TEMP_DIR"
+                    exit 0
+                    ;;
+                * )
+                    echo "   Please answer y(es), n(o), s(kip all), or q(uit)."
+                    ;;
+            esac
+        done
+    fi
+done
+
+# Clean up empty directories (but not protected ones)
+echo ""
+echo "🗂️  Removing empty directories..."
+find . -type d -empty -not -path "./.git/*" -not -path "./public/.data*" 2>/dev/null | while read -r empty_dir; do
+    if [ "$empty_dir" != "." ] && [ "$empty_dir" != "./public/.data" ]; then
+        echo "   📁 Removed empty directory: $empty_dir"
+        rmdir "$empty_dir" 2>/dev/null || true
+    fi
+done
+
+echo ""
+echo "✅ Cleanup completed!"
+echo ""
+echo "📊 Final Summary:"
+echo "  Files removed:     $REMOVED_COUNT"
+echo "  Files protected:   $PROTECTED_COUNT"
+echo "  Always protected:  .env, public/.data/, .git/"
+echo ""
+
+if [ "$REMOVED_COUNT" -gt 0 ]; then
+    echo "💾 Backup saved at: $BACKUP_DIR"
+    echo "💡 To restore a file: cp $BACKUP_DIR/path/to/file $POS_DIR/path/to/file"
+else
+    echo "🎉 No files were removed - your system is clean!"
+    # Remove empty backup directory
+    rmdir "$BACKUP_DIR" 2>/dev/null || true
+fi
+
+# Cleanup temporary directory
+rm -rf "$TEMP_DIR"
+
+echo ""
+echo "🔄 Consider running 'restart-pos' if you removed any important files"
+EOF
+
 # Create the new update-pos command
 sudo tee /usr/local/bin/update-pos << 'EOF'
 #!/bin/bash
@@ -823,7 +977,7 @@ alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
 alias admin-mode='/usr/local/bin/admin-mode'
 alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 alias update-pos='/usr/local/bin/update-pos'
-alias check-updates='/usr/local/bin/check-updates'
+alias cleanup-pos='/usr/local/bin/cleanup-pos'
 
 # Terminal customization
 PS1='\[\033[01;32m\]POS-FOCAL\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
@@ -842,6 +996,7 @@ echo "  kiosk-mode     - Start POS kiosk mode"
 echo "  detect-display - Check current display configuration"
 echo "  update-pos     - Safely update POS from GitHub (preserves local changes)"
 echo "  check-updates  - Check for available updates without applying"
+echo "  cleanup-pos    - Remove obsolete files not in GitHub repo (interactive)"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
 echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
@@ -1021,6 +1176,6 @@ echo "=== NEW UPDATE FEATURES ==="
 echo "• check-updates  - Check for available GitHub updates"
 echo "• update-pos     - Safely update while preserving local changes"
 echo "• Protected:     .env file and public/.data/ directory"
-echo "• Smart Logic:   Keeps locally modified files if newer than GitHub"
+echo "• cleanup-pos    - Interactively remove obsolete files not in GitHub"
 echo ""
 echo "System ready for reboot!"
