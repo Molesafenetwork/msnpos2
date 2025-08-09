@@ -3,7 +3,7 @@
 # NO SYSTEM UPGRADE - Uses existing packages where possible
 # Compatible with RK3566 chipset and XFCE Desktop Environment
 # THIS IS ONLY FOR THE ORANGEPI 3B RUNNING UBUNTU FOCAL 20.04 LINUX KERNAL 5
-# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/initfdesk.sh | bash
+# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/initfdesk.sh | bash
 set -e
 
 echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - AUTO DISPLAY DETECTION                 "
