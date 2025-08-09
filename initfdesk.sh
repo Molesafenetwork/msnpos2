@@ -733,6 +733,82 @@ else
 fi
 EOF
 
+# Change SESSION_SECRET in POS system and restart server
+sudo tee /usr/local/bin/change-session-secret << 'EOF'
+#!/bin/bash
+# Safely change SESSION_SECRET and restart POS system
+
+POS_DIR="/home/posuser/pos-system"
+ENV_FILE="$POS_DIR/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ .env file not found at $ENV_FILE"
+    exit 1
+fi
+
+echo "🔐 Changing SESSION_SECRET for POS system..."
+echo ""
+echo "Current session secret:"
+grep "SESSION_SECRET=" "$ENV_FILE" | sed 's/SESSION_SECRET=//' || echo "Not found"
+echo ""
+
+# Generate a new session secret
+echo "Generating new session secret..."
+NEW_SECRET=$(openssl rand -hex 32 2>/dev/null || date +%s%N | sha256sum | head -c 32)
+
+echo "New session secret will be: $NEW_SECRET"
+echo ""
+read -p "❓ Apply this new session secret? [y/N]: " confirm
+
+if [[ $confirm =~ ^[Yy]$ ]]; then
+    echo "🔄 Updating .env file..."
+    
+    # Backup current .env
+    sudo -u posuser cp "$ENV_FILE" "$ENV_FILE.backup.$(date +%Y%m%d-%H%M%S)"
+    
+    # Update SESSION_SECRET in .env
+    if grep -q "SESSION_SECRET=" "$ENV_FILE"; then
+        # Replace existing SESSION_SECRET
+        sudo -u posuser sed -i "s/^SESSION_SECRET=.*/SESSION_SECRET=$NEW_SECRET/" "$ENV_FILE"
+        echo "✅ Updated existing SESSION_SECRET"
+    else
+        # Add SESSION_SECRET if it doesn't exist
+        echo "SESSION_SECRET=$NEW_SECRET" | sudo -u posuser tee -a "$ENV_FILE" > /dev/null
+        echo "✅ Added new SESSION_SECRET"
+    fi
+    
+    echo "🔄 Restarting POS system to apply changes..."
+    sudo systemctl restart pos-system
+    
+    # Wait a moment for the service to start
+    sleep 3
+    
+    # Check if service started successfully
+    if sudo systemctl is-active --quiet pos-system; then
+        echo "✅ POS system restarted successfully!"
+        echo ""
+        echo "🌐 Your POS system is now using the new session secret"
+        echo "🔒 All existing user sessions have been invalidated"
+        echo "📍 Access your POS at: http://localhost:3000"
+        echo ""
+        echo "💡 Users will need to log in again with the new session"
+    else
+        echo "❌ Failed to restart POS system!"
+        echo "🔄 Restoring backup and restarting..."
+        sudo -u posuser cp "$ENV_FILE.backup.$(date +%Y%m%d-%H%M%S)" "$ENV_FILE"
+        sudo systemctl restart pos-system
+        echo "⚠️ Backup restored. Check pos-logs for errors."
+    fi
+    
+else
+    echo "❌ Session secret change cancelled"
+fi
+
+echo ""
+echo "💡 To check current configuration: check-env"
+echo "💡 To view system logs: pos-logs"
+EOF
+
 # Create display detection utility with improved login compatibility
 sudo tee /usr/local/bin/detect-display << 'EOF'
 #!/bin/bash
@@ -975,6 +1051,7 @@ alias generate-key='cd /home/posuser/pos-system && node -e "const CryptoJS = req
 alias check-env='cat /home/posuser/pos-system/.env'
 alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
 alias admin-mode='/usr/local/bin/admin-mode'
+alias change-session-secret='/usr/local/bin/change-session-secret'
 alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 alias update-pos='/usr/local/bin/update-pos'
 alias cleanup-pos='/usr/local/bin/cleanup-pos'
@@ -994,6 +1071,7 @@ echo "  pdf-storage    - Check PDF storage directory"
 echo "  admin-mode     - Toggle between kiosk and admin mode"
 echo "  kiosk-mode     - Start POS kiosk mode"
 echo "  detect-display - Check current display configuration"
+echo "  change-session-secret - Change SESSION_SECRET and restart server"
 echo "  update-pos     - Safely update POS from GitHub (preserves local changes)"
 echo "  check-updates  - Check for available updates without applying"
 echo "  cleanup-pos    - Remove obsolete files not in GitHub repo (interactive)"
