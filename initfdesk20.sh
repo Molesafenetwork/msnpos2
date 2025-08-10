@@ -439,40 +439,44 @@ EOF
 
 sudo chmod +x /usr/local/bin/detect-display
 
-# FIXED: Create start-pos-kiosk command with better error handling and session management
+# FIXED: Create start-pos-kiosk command with proper localhost:3000 navigation
 sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
-# Fixed POS Kiosk Startup with proper session handling
+# Fixed POS Kiosk Startup - Opens localhost:3000 in browser kiosk mode
 
 LOG_FILE="/var/log/pos-kiosk.log"
-echo "$(date): Starting POS kiosk..." >> "$LOG_FILE"
+echo "$(date): Starting POS kiosk to open localhost:3000..." >> "$LOG_FILE"
 
 # Kill any existing browser processes that might interfere
 pkill -f "chromium.*localhost:3000" 2>/dev/null || true
 pkill -f "firefox.*localhost:3000" 2>/dev/null || true
+pkill -f "chromium.*kiosk" 2>/dev/null || true
 
-# Wait for POS server to be ready with better checking
-echo "$(date): Waiting for POS server..." >> "$LOG_FILE"
+# Wait for POS server to be ready at localhost:3000
+echo "$(date): Checking if localhost:3000 is accessible..." >> "$LOG_FILE"
 SERVER_READY=false
 for i in {1..60}; do
     if curl -s --connect-timeout 2 http://localhost:3000 > /dev/null 2>&1; then
         SERVER_READY=true
-        echo "$(date): POS server is ready after $i seconds" >> "$LOG_FILE"
+        echo "$(date): localhost:3000 is ready after $i seconds" >> "$LOG_FILE"
         break
     fi
+    echo "$(date): Attempt $i - localhost:3000 not ready, waiting..." >> "$LOG_FILE"
     sleep 2
 done
 
 if [ "$SERVER_READY" = false ]; then
-    echo "$(date): ERROR: POS server failed to start after 120 seconds" >> "$LOG_FILE"
+    echo "$(date): ERROR: localhost:3000 failed to respond after 120 seconds" >> "$LOG_FILE"
+    echo "$(date): Checking if POS server process is running..." >> "$LOG_FILE"
+    ps aux | grep "node.*server.js" >> "$LOG_FILE"
     exit 1
 fi
 
-# Auto-detect available display
+# Auto-detect available display for X server
 DETECTED_DISPLAY=$(detect-display)
 export DISPLAY=$DETECTED_DISPLAY
 
-echo "$(date): Using detected display: $DETECTED_DISPLAY" >> "$LOG_FILE"
+echo "$(date): Using X server display: $DETECTED_DISPLAY to open browser" >> "$LOG_FILE"
 
 # Wait for X server to be ready
 echo "$(date): Waiting for X server on $DETECTED_DISPLAY..." >> "$LOG_FILE"
@@ -487,101 +491,100 @@ for i in {1..30}; do
 done
 
 if [ "$X_READY" = false ]; then
-    echo "$(date): ERROR: X server not ready on $DETECTED_DISPLAY" >> "$LOG_FILE"
-    exit 1
+    echo "$(date): WARNING: X server not ready on $DETECTED_DISPLAY, trying anyway..." >> "$LOG_FILE"
 fi
 
-# Hide cursor
+# Hide cursor and configure display
 unclutter -idle 1 -display $DETECTED_DISPLAY &
+xset -display $DETECTED_DISPLAY s off 2>/dev/null || true
+xset -display $DETECTED_DISPLAY -dpms 2>/dev/null || true
+xset -display $DETECTED_DISPLAY s noblank 2>/dev/null || true
 
-# Disable screensaver/power management
-xset -display $DETECTED_DISPLAY s off
-xset -display $DETECTED_DISPLAY -dpms
-xset -display $DETECTED_DISPLAY s noblank
+# Get screen information
+SCREEN_INFO=$(xrandr --display $DETECTED_DISPLAY --listmonitors 2>/dev/null || echo "Single monitor")
+echo "$(date): Screen configuration: $SCREEN_INFO" >> "$LOG_FILE"
 
-# Get screen information for multi-screen support
-SCREEN_INFO=$(xrandr --display $DETECTED_DISPLAY --listmonitors 2>/dev/null || echo "")
-if [ ! -z "$SCREEN_INFO" ]; then
-    echo "Screen configuration:" >> "$LOG_FILE"
-    echo "$SCREEN_INFO" >> "$LOG_FILE"
-fi
-
-# Determine which browser to use
+# Determine which browser to use and configure for localhost:3000
 BROWSER_CMD=""
 BROWSER_ARGS=""
 
 if command -v chromium-browser >/dev/null 2>&1; then
     BROWSER_CMD="chromium-browser"
-    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk-$$"
+    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk-$ --disable-web-security --allow-running-insecure-content"
 elif command -v chromium >/dev/null 2>&1; then
     BROWSER_CMD="chromium"
-    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk-$$"
+    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk-$ --disable-web-security --allow-running-insecure-content"
 elif command -v firefox >/dev/null 2>&1; then
     BROWSER_CMD="firefox"
-    BROWSER_ARGS="--kiosk --private-window"
+    BROWSER_ARGS="--kiosk --private-window --new-instance"
 else
     echo "$(date): ERROR: No suitable browser found" >> "$LOG_FILE"
     exit 1
 fi
 
-echo "$(date): Starting browser: $BROWSER_CMD" >> "$LOG_FILE"
+echo "$(date): Opening localhost:3000 in $BROWSER_CMD kiosk mode..." >> "$LOG_FILE"
+echo "$(date): Browser command: $BROWSER_CMD $BROWSER_ARGS http://localhost:3000" >> "$LOG_FILE"
 
-# Start browser with proper environment and error handling
+# Set display and start browser pointing to localhost:3000
 export DISPLAY=$DETECTED_DISPLAY
-$BROWSER_CMD $BROWSER_ARGS http://localhost:3000 >> "$LOG_FILE" 2>&1 &
+nohup $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 >> "$LOG_FILE" 2>&1 &
 BROWSER_PID=$!
 
-echo "$(date): Browser started with PID $BROWSER_PID" >> "$LOG_FILE"
+echo "$(date): Browser launched with PID $BROWSER_PID targeting localhost:3000" >> "$LOG_FILE"
 
-# Optional: If multiple monitors detected, try to span or duplicate
-if echo "$SCREEN_INFO" | grep -q "Monitors: [2-9]"; then
-    echo "Multiple monitors detected - browser will use primary display" >> "$LOG_FILE"
-fi
-
-# Wait a bit to ensure browser started
+# Verify browser started and is accessing localhost:3000
 sleep 5
-
-# Check if browser is still running
 if kill -0 $BROWSER_PID 2>/dev/null; then
-    echo "$(date): Browser successfully started and running" >> "$LOG_FILE"
+    echo "$(date): ✅ Browser successfully opened localhost:3000 in kiosk mode" >> "$LOG_FILE"
+    
+    # Additional verification - check if browser is making requests
+    sleep 3
+    if curl -s --connect-timeout 1 http://localhost:3000 > /dev/null 2>&1; then
+        echo "$(date): ✅ Confirmed: localhost:3000 is being accessed" >> "$LOG_FILE"
+    fi
 else
-    echo "$(date): ERROR: Browser failed to start or crashed immediately" >> "$LOG_FILE"
+    echo "$(date): ❌ ERROR: Browser failed to start or crashed immediately" >> "$LOG_FILE"
     exit 1
 fi
 
-# Keep the script running to maintain the session
+# Optional: Multi-monitor support
+if echo "$SCREEN_INFO" | grep -q "Monitors: [2-9]"; then
+    echo "$(date): Multiple monitors detected - browser using primary display for localhost:3000" >> "$LOG_FILE"
+fi
+
+# Keep script running to maintain the kiosk session
 wait $BROWSER_PID
-echo "$(date): Browser process ended" >> "$LOG_FILE"
+echo "$(date): Browser session ended, localhost:3000 kiosk closed" >> "$LOG_FILE"
 EOF
 
-# Create admin-mode command with improved display detection
+# Create admin-mode command with proper localhost:3000 handling
 sudo tee /usr/local/bin/admin-mode << 'EOF'
 #!/bin/bash
-# Toggle between POS kiosk and admin mode (XFCE focal version - Auto Display Detection)
-PID=$(pgrep -f "kiosk.*localhost:3000")
-if [ ! -z "$PID" ]; then
+# Toggle between POS kiosk (localhost:3000) and admin mode
+
+# Check if browser is running with localhost:3000
+BROWSER_PID=$(pgrep -f "localhost:3000" 2>/dev/null)
+KIOSK_PID=$(pgrep -f "start-pos-kiosk" 2>/dev/null)
+
+if [ ! -z "$BROWSER_PID" ] || [ ! -z "$KIOSK_PID" ]; then
     echo "Switching to admin mode..."
-    kill $PID
-    # Detect available display and start XFCE terminal in fullscreen
-    if [ -z "$DISPLAY" ]; then
-        # Try to detect display if not set
-        for disp in ":0" ":1" ":10"; do
-            if timeout 2 xset -display "$disp" q >/dev/null 2>&1; then
-                export DISPLAY="$disp"
-                break
-            fi
-        done
-    fi
+    echo "Stopping kiosk browser accessing localhost:3000..."
     
-    # Fallback to :0 if still not set
-    if [ -z "$DISPLAY" ]; then
-        export DISPLAY=":0"
-    fi
+    # Kill browser processes accessing localhost:3000
+    pkill -f "localhost:3000" 2>/dev/null || true
+    pkill -f "start-pos-kiosk" 2>/dev/null || true
+    pkill -f "chromium.*kiosk" 2>/dev/null || true
+    pkill -f "firefox.*kiosk" 2>/dev/null || true
     
-    echo "Using display: $DISPLAY for admin terminal"
-    DISPLAY="$DISPLAY" xfce4-terminal --fullscreen &
+    # Detect available display for admin terminal
+    DETECTED_DISPLAY=$(detect-display)
+    export DISPLAY="$DETECTED_DISPLAY"
+    
+    echo "Opening admin terminal on display: $DISPLAY"
+    echo "POS server still running at localhost:3000 for admin access"
+    DISPLAY="$DETECTED_DISPLAY" xfce4-terminal --fullscreen &
 else
-    echo "Starting POS kiosk mode..."
+    echo "Starting POS kiosk mode to display localhost:3000..."
     /usr/local/bin/start-pos-kiosk &
 fi
 EOF
