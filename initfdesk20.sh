@@ -56,7 +56,8 @@ fi
 
 # Update package lists only (no system upgrade)
 echo "Refreshing package lists (no system upgrade)..."
-# sudo apt update
+sudo apt update
+echo "Configuring dpkg" 
 sudo dpkg --configure -a 
 
 # Install essential packages for XFCE Desktop (focal compatible)
@@ -65,7 +66,7 @@ sudo apt install -y curl git unclutter sed nano \
     wmctrl xdotool lightdm x11-utils xfce4-session \
     systemd-timesyncd openssh-server build-essential ufw \
     xfce4-terminal xfce4-panel xfce4-settings xinit xorg snapd \
-    npm nvm
+    npm 
 
 # Install browser - try multiple options, avoid snap
 echo "Installing web browser (avoiding snap)..."
@@ -607,6 +608,7 @@ echo "  pdf-storage   - Check PDF storage directory"
 echo "  admin-mode    - Toggle between kiosk and admin mode"
 echo "  kiosk-mode    - Start POS kiosk mode"
 echo "  detect-display- Check current display configuration"
+echo "Run this script as posuser to start autostart and hotkeys: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
 echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
@@ -760,8 +762,6 @@ sudo ufw allow 3000/tcp
 sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
-curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash
-
 echo ""
 echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues - Auto Display Detection) ==="
 echo ""
@@ -781,5 +781,5 @@ echo "=== ADMIN ACCESS ==="
 echo "• Hotkey: Ctrl+Alt+T (toggle admin/kiosk mode)"
 echo "• SSH: ssh posuser@[ip-address]"
 echo "• Display Check: run 'detect-display' command"
-echo ""
+echo "Run this script as posuser to start autostart and hotkeys: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash"
 echo "System ready for reboot!"
