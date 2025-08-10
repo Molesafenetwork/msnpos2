@@ -645,12 +645,12 @@ if [ -z "$DISPLAY" ]; then
 fi
 
 # Setup hotkeys only once
-if [ ! -f ~/.hotkeys-setup ]; then
-    if [ -f /home/posuser/setup-hotkeys.sh ]; then
-        /home/posuser/setup-hotkeys.sh 2>/dev/null || true
-        touch ~/.hotkeys-setup
-    fi
-fi
+# if [ ! -f ~/.hotkeys-setup ]; then
+#    if [ -f /home/posuser/setup-hotkeys.sh ]; then
+#        /home/posuser/setup-hotkeys.sh 2>/dev/null || true
+#        touch ~/.hotkeys-setup
+#    fi
+# fi
 
 # Log successful login for debugging
 echo "$(date): posuser logged in with DISPLAY=$DISPLAY" >> /home/posuser/.login-log
