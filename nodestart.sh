@@ -44,15 +44,26 @@ echo " ::       ::::: ::  :::: ::"
 echo " :         : :  :   :: : :"             
 echo
 
-
-# --- Step 1: Apply hotkeys FIRST ---
-echo "[1/4] Applying POS hotkeys..."
-curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/pos-hotkeys.sh | bash
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to apply hotkeys. Exiting."
-    exit 1
-fi
-echo "✅ Hotkeys applied."
+# --- Step 1: Ask about hotkeys ---
+while true; do
+    read -rp "Do you want to apply POS hotkeys? (y/n): " choice
+    case "$choice" in
+        [Yy]* )
+            echo "[1/4] Applying POS hotkeys..."
+            curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/pos-hotkeys.sh | bash
+            if [ $? -ne 0 ]; then
+                echo "❌ Failed to apply hotkeys. Exiting."
+                exit 1
+            fi
+            echo "✅ Hotkeys applied."
+            break;;
+        [Nn]* )
+            echo "Hotkeys installation skipped."
+            break;;
+        * )
+            echo "Please answer y or n.";;
+    esac
+done
 
 # --- Step 2: Check for POS folder ---
 if [ ! -d "$HOME/pos-system" ]; then
