@@ -1,11 +1,12 @@
 #!/bin/bash
 # Orange Pi 3B POS System Setup Script for Ubuntu Focal (20.04)
-# FIXED VERSION - Addresses kiosk login redirect issues
+# NO SYSTEM UPGRADE - Uses existing packages where possible
 # Compatible with RK3566 chipset and XFCE Desktop Environment
-# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/initfdesk20.sh | bash
+# THIS IS ONLY FOR THE ORANGEPI 3B RUNNING UBUNTU FOCAL 20.04 LINUX KERNAL 5
+# Run with: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/refs/heads/main/initfdesk20.sh | bash
 set -e
 
-echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - FIXED KIOSK) - AUTO DISPLAY DETECTION                 "
+echo "                MOLE - POS - ORANGEPI 3b MSN POS (FOCAL - NO SNAP) - AUTO DISPLAY DETECTION                 "
 echo "@@@@@@@@@@    @@@@@@   @@@  @@@"       
 echo "@@@@@@@@@@@  @@@@@@@   @@@@ @@@"       
 echo "@@! @@! @@!  !@@       @@!@!@@@"       
@@ -18,7 +19,7 @@ echo ":::     ::   :::: ::    ::   ::"
 echo " :      :    :: : :     ::    :"    
                                        
                                        
-echo " @@@@@@   @@@@@@@   @@@@@@@@  @@@  @@@"
+echo "@@@@@@   @@@@@@@   @@@@@@@@  @@@  @@@"
 echo "@@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@ @@@" 
 echo "@@!  @@@  @@!  @@@  @@!       @@!@!@@@" 
 echo "!@!  @!@  !@!  @!@  !@!       !@!!@!@!" 
@@ -40,7 +41,6 @@ echo "!!:       !!:  !!!       !:!"
 echo ":!:       :!:  !:!      !:!"            
 echo " ::       ::::: ::  :::: ::"            
 echo " :         : :  :   :: : :"             
-
 # Check Ubuntu version
 UBUNTU_VERSION=$(lsb_release -rs 2>/dev/null || echo "unknown")
 echo "Detected Ubuntu version: $UBUNTU_VERSION (focal)"
@@ -56,8 +56,7 @@ fi
 
 # Update package lists only (no system upgrade)
 echo "Refreshing package lists (no system upgrade)..."
-sudo apt update
-echo "Configuring dpkg" 
+# sudo apt update
 sudo dpkg --configure -a 
 
 # Install essential packages for XFCE Desktop (focal compatible)
@@ -66,7 +65,7 @@ sudo apt install -y curl git unclutter sed nano \
     wmctrl xdotool lightdm x11-utils xfce4-session \
     systemd-timesyncd openssh-server build-essential ufw \
     xfce4-terminal xfce4-panel xfce4-settings xinit xorg snapd \
-    npm jq
+    npm nvm
 
 # Install browser - try multiple options, avoid snap
 echo "Installing web browser (avoiding snap)..."
@@ -107,6 +106,36 @@ else
     echo "❌ Browser installation failed - will use alternative method"
 fi
 
+# Install Node.js 18.x LTS from NodeSource repository (focal compatible)
+echo "Installing Node.js 18.x LTS for Ubuntu focal..."
+# Check if Node.js is already installed
+if command -v node >/dev/null 2>&1; then
+    CURRENT_NODE_VERSION=$(node --version)
+    echo "Current Node.js version: $CURRENT_NODE_VERSION"
+    if [[ "$CURRENT_NODE_VERSION" =~ ^v18\. ]]; then
+        echo "Node.js 18.x already installed, skipping..."
+    else
+        echo "Upgrading Node.js to 18.x..."
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt install -y nodejs
+    fi
+else
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt install -y nodejs
+fi
+
+# Verify Node.js installation
+echo "Node.js version: $(node --version)"
+echo "NPM version: $(npm --version)"
+
+# Install PM2 globally if not already installed
+if ! command -v pm2 >/dev/null 2>&1; then
+    echo "Installing PM2..."
+    sudo npm install -g pm2
+else
+    echo "PM2 already installed: $(pm2 --version)"
+fi
+
 # Create POS user if it doesn't exist
 if ! id "posuser" &>/dev/null; then
     echo "Creating POS user..."
@@ -123,7 +152,7 @@ echo "Setting up POS application..."
 if [ -d "/home/posuser/pos-system" ]; then
     echo "POS system directory exists, pulling latest changes..."
     cd /home/posuser/pos-system
-    sudo -u posuser git pull || echo "Git pull failed, continuing..."
+    sudo -u posuser git pull
 else
     echo "Cloning POS application..."
     cd /home/posuser
@@ -132,31 +161,10 @@ fi
 
 cd /home/posuser/pos-system
 
-# Install NVM and Node.js for posuser
-echo "Installing NVM and Node.js 18 for posuser..."
-sudo -u posuser bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
-
-# Source NVM and install Node 18
-sudo -u posuser bash -c '
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm install 18
-nvm use 18
-nvm alias default 18
-'
-
-# Add NVM to posuser's bashrc and profile
-sudo -u posuser bash -c 'echo "export NVM_DIR=\$HOME/.nvm" >> ~/.bashrc'
-sudo -u posuser bash -c 'echo "[ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"" >> ~/.bashrc'
-sudo -u posuser bash -c 'echo "[ -s \"\$NVM_DIR/bash_completion\" ] && \. \"\$NVM_DIR/bash_completion\"" >> ~/.bashrc'
-
-# Install PM2 globally using NVM Node
-echo "Installing PM2 globally..."
-sudo -u posuser bash -c '
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-npm install -g pm2
-'
+# Install Node.js dependencies with compatibility for older systems
+echo "Installing Node.js dependencies for focal..."
+# Clear npm cache first
+sudo -u posuser npm cache clean --force
 
 # Create package.json if it doesn't exist
 if [ ! -f package.json ]; then
@@ -202,33 +210,26 @@ if [ ! -f package.json ]; then
 PKGJSON
 fi
 
-# Install Node.js dependencies using NVM's Node
-echo "Installing Node.js dependencies..."
-sudo -u posuser bash -c '
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-cd /home/posuser/pos-system
-npm cache clean --force
-npm install crypto-js express body-parser cors --save || echo "Some packages may have warnings, continuing..."
-npm install || echo "Some optional dependencies may have failed, continuing..."
-npm audit fix || echo "Audit fix completed with warnings"
-'
+# Install dependencies with older versions for focal compatibility
+echo "Installing crypto-js and core dependencies..."
+sudo -u posuser npm install crypto-js express body-parser cors --save || echo "Some packages may have warnings, continuing..."
 
-# Set up .env file
+# Try to install remaining dependencies with fallbacks
+echo "Installing remaining dependencies..."
+sudo -u posuser npm install || echo "Some optional dependencies may have failed, continuing..."
+
+# Run npm audit fix but don't force (safer for older systems)
+sudo -u posuser npm audit fix || echo "Audit fix completed with warnings"
+
 ENV_PATH=".env"
 cd /home/posuser/pos-system
 
-# Generate crypto key using NVM Node.js
+# Generate crypto key using system Node.js
 if [ -f "$ENV_PATH" ] && grep -q 'ENCRYPTION_KEY=' "$ENV_PATH" && ! grep -q 'ENCRYPTION_KEY=$' "$ENV_PATH"; then
     echo ".env file exists with encryption key, skipping key generation..."
 else
     echo "Generating encryption key..."
-    CRYPTO_KEY=$(sudo -u posuser bash -c '
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    cd /home/posuser/pos-system
-    node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());" 2>/dev/null || echo "fallback_key_$(date +%s)"
-    ')
+    CRYPTO_KEY=$(sudo -u posuser bash -c 'cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"' 2>/dev/null || echo "fallback_key_$(date +%s)")
     
     if [ ! -f "$ENV_PATH" ]; then
         echo "Creating new .env with generated encryption key..."
@@ -261,9 +262,10 @@ sudo chmod 755 public/.data
 echo "PDF storage configured at: ./public/.data"
 
 # Create custom commands directory
+echo "Setting up custom commands..."
 sudo mkdir -p /usr/local/bin
 
-# Create ALL custom commands from both versions plus new stop/start commands
+# Create all the custom commands with browser detection
 sudo tee /usr/local/bin/edit-env << 'EOF'
 #!/bin/bash
 sudo nano /home/posuser/pos-system/.env
@@ -279,8 +281,6 @@ EOF
 sudo tee /usr/local/bin/generate-key << 'EOF'
 #!/bin/bash
 cd /home/posuser/pos-system
-export NVM_DIR="/home/posuser/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 echo "Generating new encryption key..."
 NEW_KEY=$(node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());" 2>/dev/null || echo "fallback_key_$(date +%s)")
 echo "New encryption key: $NEW_KEY"
@@ -306,61 +306,7 @@ EOF
 sudo tee /usr/local/bin/pos-logs << 'EOF'
 #!/bin/bash
 echo "POS System logs (press Ctrl+C to exit):"
-echo "=== Application Logs ==="
-journalctl -u pos-system -f --no-pager &
-APP_PID=$!
-echo "=== Kiosk Logs ==="
-tail -f /var/log/pos-kiosk.log 2>/dev/null &
-KIOSK_PID=$!
-trap "kill $APP_PID $KIOSK_PID 2>/dev/null" EXIT
-wait
-EOF
-
-# NEW: Stop POS system command
-sudo tee /usr/local/bin/stop-pos << 'EOF'
-#!/bin/bash
-echo "Stopping POS system and kiosk..."
-# Stop systemd services
-sudo systemctl stop pos-kiosk 2>/dev/null || true
-sudo systemctl stop pos-system 2>/dev/null || true
-
-# Kill any running browser processes
-pkill -f "chromium.*localhost:3000" 2>/dev/null || true
-pkill -f "firefox.*localhost:3000" 2>/dev/null || true
-pkill -f "kiosk.*localhost:3000" 2>/dev/null || true
-
-# Kill any Node.js processes running the POS server
-pkill -f "node.*server.js" 2>/dev/null || true
-
-echo "✅ POS system stopped"
-echo "Services status:"
-sudo systemctl is-active pos-system || echo "pos-system: stopped"
-sudo systemctl is-active pos-kiosk || echo "pos-kiosk: stopped"
-EOF
-
-# NEW: Start POS system command
-sudo tee /usr/local/bin/start-pos << 'EOF'
-#!/bin/bash
-echo "Starting POS system and kiosk..."
-
-# Start systemd services
-sudo systemctl start pos-system
-echo "✅ POS application started"
-
-# Wait a moment for the application to initialize
-sleep 5
-
-sudo systemctl start pos-kiosk
-echo "✅ POS kiosk started"
-
-echo "Services status:"
-sudo systemctl is-active pos-system
-sudo systemctl is-active pos-kiosk
-
-echo ""
-echo "POS system is starting up..."
-echo "Check status with: pos-logs"
-echo "Access URL: http://localhost:3000"
+journalctl -u pos-system -f
 EOF
 
 sudo tee /usr/local/bin/restart-pos << 'EOF'
@@ -370,25 +316,61 @@ sudo systemctl restart pos-system pos-kiosk
 echo "POS system restarted"
 EOF
 
-# Create detect-display utility with improved compatibility
+# Create admin-mode command with improved display detection
+sudo tee /usr/local/bin/admin-mode << 'EOF'
+#!/bin/bash
+# Toggle between POS kiosk and admin mode (XFCE focal version - Auto Display Detection)
+PID=$(pgrep -f "kiosk.*localhost:3000")
+if [ ! -z "$PID" ]; then
+    echo "Switching to admin mode..."
+    kill $PID
+    # Detect available display and start XFCE terminal in fullscreen
+    if [ -z "$DISPLAY" ]; then
+        # Try to detect display if not set
+        for disp in ":0" ":1" ":10"; do
+            if timeout 2 xset -display "$disp" q >/dev/null 2>&1; then
+                export DISPLAY="$disp"
+                break
+            fi
+        done
+    fi
+    
+    # Fallback to :0 if still not set
+    if [ -z "$DISPLAY" ]; then
+        export DISPLAY=":0"
+    fi
+    
+    echo "Using display: $DISPLAY for admin terminal"
+    DISPLAY="$DISPLAY" xfce4-terminal --fullscreen &
+else
+    echo "Starting POS kiosk mode..."
+    /usr/local/bin/start-pos-kiosk &
+fi
+EOF
+
+# Create display detection utility with improved login compatibility
 sudo tee /usr/local/bin/detect-display << 'EOF'
 #!/bin/bash
 # Auto-detect available display for maximum compatibility
 
+# Function to check if a display is available
 check_display() {
     local display=$1
+    # Try multiple methods to check display availability
     if command -v xset >/dev/null 2>&1; then
         if timeout 2 sh -c "DISPLAY=$display xset q >/dev/null 2>&1"; then
             return 0
         fi
     fi
     
+    # Alternative check using xdpyinfo
     if command -v xdpyinfo >/dev/null 2>&1; then
         if timeout 2 sh -c "DISPLAY=$display xdpyinfo >/dev/null 2>&1"; then
             return 0
         fi
     fi
     
+    # Check if X server socket exists
     if [ -S "/tmp/.X11-unix/X${display#:}" ]; then
         return 0
     fi
@@ -396,12 +378,15 @@ check_display() {
     return 1
 }
 
+# Function to get display from current session if available
 get_session_display() {
+    # Check environment variables
     if [ ! -z "$DISPLAY" ] && check_display "$DISPLAY"; then
         echo "$DISPLAY"
         return 0
     fi
     
+    # Check lightdm display
     if [ ! -z "$XDG_VTNR" ]; then
         local tty_display=":$((XDG_VTNR - 1))"
         if check_display "$tty_display"; then
@@ -413,12 +398,15 @@ get_session_display() {
     return 1
 }
 
+# Try to get display from current session first
 if SESSION_DISPLAY=$(get_session_display); then
     echo "$SESSION_DISPLAY"
     exit 0
 fi
 
+# Try displays in order of preference
 DISPLAYS=(":0" ":1" ":10" ":11" ":2" ":3")
+
 for display in "${DISPLAYS[@]}"; do
     if check_display "$display"; then
         echo "$display"
@@ -426,6 +414,7 @@ for display in "${DISPLAYS[@]}"; do
     fi
 done
 
+# If no display found, check what lightdm might be using
 if pgrep -f "lightdm.*X" >/dev/null; then
     LIGHTDM_DISPLAY=$(ps aux | grep -E "lightdm.*X\s+:[0-9]+" | grep -oE ":[0-9]+" | head -1)
     if [ ! -z "$LIGHTDM_DISPLAY" ]; then
@@ -434,165 +423,87 @@ if pgrep -f "lightdm.*X" >/dev/null; then
     fi
 fi
 
+# Final fallback to :0
 echo ":0"
 EOF
 
 sudo chmod +x /usr/local/bin/detect-display
 
-# FIXED: Create start-pos-kiosk command with proper localhost:3000 navigation
+# Create start-pos-kiosk command with intelligent browser detection (Auto Display Detection)
 sudo tee /usr/local/bin/start-pos-kiosk << 'EOF'
 #!/bin/bash
-# Fixed POS Kiosk Startup - Opens localhost:3000 in browser kiosk mode
-
-LOG_FILE="/var/log/pos-kiosk.log"
-echo "$(date): Starting POS kiosk to open localhost:3000..." >> "$LOG_FILE"
-
-# Kill any existing browser processes that might interfere
-pkill -f "chromium.*localhost:3000" 2>/dev/null || true
-pkill -f "firefox.*localhost:3000" 2>/dev/null || true
-pkill -f "chromium.*kiosk" 2>/dev/null || true
-
-# Wait for POS server to be ready at localhost:3000
-echo "$(date): Checking if localhost:3000 is accessible..." >> "$LOG_FILE"
-SERVER_READY=false
-for i in {1..60}; do
-    if curl -s --connect-timeout 2 http://localhost:3000 > /dev/null 2>&1; then
-        SERVER_READY=true
-        echo "$(date): localhost:3000 is ready after $i seconds" >> "$LOG_FILE"
+# Wait for POS server to be ready
+echo "Waiting for POS server to start..."
+for i in {1..30}; do
+    if curl -s http://localhost:3000 > /dev/null; then
         break
     fi
-    echo "$(date): Attempt $i - localhost:3000 not ready, waiting..." >> "$LOG_FILE"
     sleep 2
 done
 
-if [ "$SERVER_READY" = false ]; then
-    echo "$(date): ERROR: localhost:3000 failed to respond after 120 seconds" >> "$LOG_FILE"
-    echo "$(date): Checking if POS server process is running..." >> "$LOG_FILE"
-    ps aux | grep "node.*server.js" >> "$LOG_FILE"
-    exit 1
-fi
-
-# Auto-detect available display for X server
+# Auto-detect available display
 DETECTED_DISPLAY=$(detect-display)
 export DISPLAY=$DETECTED_DISPLAY
 
-echo "$(date): Using X server display: $DETECTED_DISPLAY to open browser" >> "$LOG_FILE"
+echo "Using detected display: $DETECTED_DISPLAY"
 
-# Wait for X server to be ready
-echo "$(date): Waiting for X server on $DETECTED_DISPLAY..." >> "$LOG_FILE"
-X_READY=false
+# Wait for X server to be ready on detected display
+echo "Waiting for X server on $DETECTED_DISPLAY..."
 for i in {1..30}; do
     if DISPLAY=$DETECTED_DISPLAY xset q >/dev/null 2>&1; then
-        X_READY=true
-        echo "$(date): X server ready on $DETECTED_DISPLAY after $i seconds" >> "$LOG_FILE"
         break
     fi
     sleep 1
 done
 
-if [ "$X_READY" = false ]; then
-    echo "$(date): WARNING: X server not ready on $DETECTED_DISPLAY, trying anyway..." >> "$LOG_FILE"
+# Hide cursor
+unclutter -idle 1 -display $DETECTED_DISPLAY &
+
+# Disable XFCE screensaver/power management on detected display
+xset -display $DETECTED_DISPLAY s off
+xset -display $DETECTED_DISPLAY -dpms
+xset -display $DETECTED_DISPLAY s noblank
+
+# Get screen information for multi-screen support
+SCREEN_INFO=$(xrandr --display $DETECTED_DISPLAY --listmonitors 2>/dev/null || echo "")
+if [ ! -z "$SCREEN_INFO" ]; then
+    echo "Screen configuration:"
+    echo "$SCREEN_INFO"
 fi
 
-# Hide cursor and configure display
-unclutter -idle 1 -display $DETECTED_DISPLAY &
-xset -display $DETECTED_DISPLAY s off 2>/dev/null || true
-xset -display $DETECTED_DISPLAY -dpms 2>/dev/null || true
-xset -display $DETECTED_DISPLAY s noblank 2>/dev/null || true
-
-# Get screen information
-SCREEN_INFO=$(xrandr --display $DETECTED_DISPLAY --listmonitors 2>/dev/null || echo "Single monitor")
-echo "$(date): Screen configuration: $SCREEN_INFO" >> "$LOG_FILE"
-
-# Determine which browser to use and configure for localhost:3000
+# Determine which browser to use (priority order)
 BROWSER_CMD=""
 BROWSER_ARGS=""
 
 if command -v chromium-browser >/dev/null 2>&1; then
     BROWSER_CMD="chromium-browser"
-    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk-$ --disable-web-security --allow-running-insecure-content"
+    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk"
 elif command -v chromium >/dev/null 2>&1; then
     BROWSER_CMD="chromium"
-    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk-$ --disable-web-security --allow-running-insecure-content"
+    BROWSER_ARGS="--kiosk --no-first-run --disable-restore-session-state --disable-infobars --disable-translate --disable-dev-shm-usage --no-sandbox --disk-cache-dir=/tmp --start-maximized --window-position=0,0 --user-data-dir=/tmp/chromium-kiosk"
 elif command -v firefox >/dev/null 2>&1; then
     BROWSER_CMD="firefox"
-    BROWSER_ARGS="--kiosk --private-window --new-instance"
+    BROWSER_ARGS="--kiosk --private-window"
 else
-    echo "$(date): ERROR: No suitable browser found" >> "$LOG_FILE"
+    echo "Error: No suitable browser found"
     exit 1
 fi
 
-echo "$(date): Opening localhost:3000 in $BROWSER_CMD kiosk mode..." >> "$LOG_FILE"
-echo "$(date): Browser command: $BROWSER_CMD $BROWSER_ARGS http://localhost:3000" >> "$LOG_FILE"
+# Start browser in kiosk mode on detected display
+echo "Starting POS kiosk with $BROWSER_CMD on display $DETECTED_DISPLAY..."
+DISPLAY=$DETECTED_DISPLAY $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 &
 
-# Set display and start browser pointing to localhost:3000
-export DISPLAY=$DETECTED_DISPLAY
-nohup $BROWSER_CMD $BROWSER_ARGS http://localhost:3000 >> "$LOG_FILE" 2>&1 &
-BROWSER_PID=$!
-
-echo "$(date): Browser launched with PID $BROWSER_PID targeting localhost:3000" >> "$LOG_FILE"
-
-# Verify browser started and is accessing localhost:3000
-sleep 5
-if kill -0 $BROWSER_PID 2>/dev/null; then
-    echo "$(date): ✅ Browser successfully opened localhost:3000 in kiosk mode" >> "$LOG_FILE"
-    
-    # Additional verification - check if browser is making requests
-    sleep 3
-    if curl -s --connect-timeout 1 http://localhost:3000 > /dev/null 2>&1; then
-        echo "$(date): ✅ Confirmed: localhost:3000 is being accessed" >> "$LOG_FILE"
-    fi
-else
-    echo "$(date): ❌ ERROR: Browser failed to start or crashed immediately" >> "$LOG_FILE"
-    exit 1
-fi
-
-# Optional: Multi-monitor support
+# Optional: If multiple monitors detected, try to span or duplicate
 if echo "$SCREEN_INFO" | grep -q "Monitors: [2-9]"; then
-    echo "$(date): Multiple monitors detected - browser using primary display for localhost:3000" >> "$LOG_FILE"
-fi
-
-# Keep script running to maintain the kiosk session
-wait $BROWSER_PID
-echo "$(date): Browser session ended, localhost:3000 kiosk closed" >> "$LOG_FILE"
-EOF
-
-# Create admin-mode command with proper localhost:3000 handling
-sudo tee /usr/local/bin/admin-mode << 'EOF'
-#!/bin/bash
-# Toggle between POS kiosk (localhost:3000) and admin mode
-
-# Check if browser is running with localhost:3000
-BROWSER_PID=$(pgrep -f "localhost:3000" 2>/dev/null)
-KIOSK_PID=$(pgrep -f "start-pos-kiosk" 2>/dev/null)
-
-if [ ! -z "$BROWSER_PID" ] || [ ! -z "$KIOSK_PID" ]; then
-    echo "Switching to admin mode..."
-    echo "Stopping kiosk browser accessing localhost:3000..."
-    
-    # Kill browser processes accessing localhost:3000
-    pkill -f "localhost:3000" 2>/dev/null || true
-    pkill -f "start-pos-kiosk" 2>/dev/null || true
-    pkill -f "chromium.*kiosk" 2>/dev/null || true
-    pkill -f "firefox.*kiosk" 2>/dev/null || true
-    
-    # Detect available display for admin terminal
-    DETECTED_DISPLAY=$(detect-display)
-    export DISPLAY="$DETECTED_DISPLAY"
-    
-    echo "Opening admin terminal on display: $DISPLAY"
-    echo "POS server still running at localhost:3000 for admin access"
-    DISPLAY="$DETECTED_DISPLAY" xfce4-terminal --fullscreen &
-else
-    echo "Starting POS kiosk mode to display localhost:3000..."
-    /usr/local/bin/start-pos-kiosk &
+    echo "Multiple monitors detected - browser will use primary display"
+    # You could add xrandr commands here to configure multi-monitor setup if needed
 fi
 EOF
 
 # Make commands executable
 sudo chmod +x /usr/local/bin/*
 
-# FIXED: Create systemd service with proper Node.js path from NVM
+# Create systemd services
 sudo tee /etc/systemd/system/pos-system.service << 'EOF'
 [Unit]
 Description=POS System Node.js Application
@@ -603,44 +514,39 @@ Type=simple
 User=posuser
 WorkingDirectory=/home/posuser/pos-system
 Environment=NODE_ENV=production
-Environment=NVM_DIR=/home/posuser/.nvm
-ExecStart=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && node server.js'
+ExecStart=/usr/bin/node server.js
 Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# FIXED: Updated kiosk service with better timing and dependencies
+# Updated systemd service for Auto Display Detection
 sudo tee /etc/systemd/system/pos-kiosk.service << 'EOF'
 [Unit]
 Description=POS Kiosk Display (Auto-Detect)
-After=pos-system.service lightdm.service graphical.target
+After=pos-system.service lightdm.service
 Wants=pos-system.service
 Requires=graphical.target
 
 [Service]
-Type=simple
+Type=forking
 User=posuser
 Group=posuser
 Environment=XDG_RUNTIME_DIR=/run/user/1001
 WorkingDirectory=/home/posuser
-ExecStartPre=/bin/sleep 30
+ExecStartPre=/bin/sleep 20
 ExecStart=/usr/local/bin/start-pos-kiosk
 Restart=always
-RestartSec=15
+RestartSec=10
 RestartPreventExitStatus=0
-StandardOutput=journal
-StandardError=journal
 
 [Install]
 WantedBy=graphical.target
 EOF
 
-# Create improved XFCE autostart
+# Create XFCE autostart and configuration
 sudo mkdir -p /home/posuser/.config/autostart
 sudo tee /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
@@ -673,36 +579,27 @@ EOF
 
 sudo chmod +x /home/posuser/setup-hotkeys.sh
 
-# Create enhanced bashrc with all commands from both versions
+# Create bashrc
 sudo tee /home/posuser/.bashrc << 'EOF'
-# NVM Configuration
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-# Custom POS Terminal Commands (Complete Set)
+# Custom POS Terminal Commands
 alias edit-env='nano /home/posuser/pos-system/.env && sudo systemctl restart pos-system'
 alias setup-tailnet='curl -fsSL https://tailscale.com/install.sh | sh && echo "Run: sudo tailscale up"'
 alias restart-pos='sudo systemctl restart pos-system pos-kiosk'
-alias stop-pos='/usr/local/bin/stop-pos'
-alias start-pos='/usr/local/bin/start-pos'
 alias pos-logs='journalctl -u pos-system -f'
-alias generate-key='cd /home/posuser/pos-system && source ~/.nvm/nvm.sh && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(\"New key:\", key.toString());"'
+alias generate-key='cd /home/posuser/pos-system && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(\"New key:\", key.toString());"'
 alias check-env='cat /home/posuser/pos-system/.env'
 alias pdf-storage='ls -la /home/posuser/pos-system/public/.data/'
 alias admin-mode='/usr/local/bin/admin-mode'
 alias kiosk-mode='/usr/local/bin/start-pos-kiosk'
 
 # Terminal customization
-PS1='\[\033[01;32m\]POS-FOCAL-FIXED\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+PS1='\[\033[01;32m\]POS-FOCAL\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-echo "=== POS Admin Terminal (Ubuntu Focal - FIXED VERSION) ==="
+echo "=== POS Admin Terminal (Ubuntu Focal - No Snap - Auto Display Detection) ==="
 echo "Available commands:"
 echo "  edit-env      - Edit environment variables"
 echo "  setup-tailnet - Install and setup Tailscale" 
 echo "  restart-pos   - Restart POS services"
-echo "  stop-pos      - Stop POS system and kiosk"
-echo "  start-pos     - Start POS system and kiosk"
 echo "  pos-logs      - View POS application logs"
 echo "  generate-key  - Generate new encryption key"
 echo "  check-env     - View current .env settings"
@@ -710,16 +607,79 @@ echo "  pdf-storage   - Check PDF storage directory"
 echo "  admin-mode    - Toggle between kiosk and admin mode"
 echo "  kiosk-mode    - Start POS kiosk mode"
 echo "  detect-display- Check current display configuration"
-echo "Run this script as posuser to start autostart and hotkeys: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash"
 echo ""
 echo "Hotkey: Ctrl+Alt+T to toggle admin mode"
-echo "Node.js: $(node --version 2>/dev/null || echo 'Not loaded')"
-echo "Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
+echo "Ubuntu Focal (20.04) - Browser: $(command -v chromium-browser || command -v chromium || command -v firefox || echo 'Unknown')"
 echo "Current Display: $(detect-display 2>/dev/null || echo 'Auto-Detect')"
 echo "=========================="
 EOF
 
-# Create session wrapper script for posuser to ensure proper environment
+sudo tee /home/posuser/.profile << 'EOF'
+export PATH="/usr/local/bin:$PATH"
+
+# Safe display detection for login compatibility
+detect_display_safe() {
+    # Try current DISPLAY first
+    if [ ! -z "$DISPLAY" ]; then
+        echo "$DISPLAY"
+        return 0
+    fi
+    
+    # Try to detect display safely
+    if command -v detect-display >/dev/null 2>&1; then
+        DETECTED=$(timeout 5 detect-display 2>/dev/null || echo ":0")
+        echo "$DETECTED"
+    else
+        echo ":0"
+    fi
+}
+
+# Set DISPLAY with timeout protection
+export DISPLAY=$(detect_display_safe)
+
+# Ensure we have a valid DISPLAY for the session
+if [ -z "$DISPLAY" ]; then
+    export DISPLAY=":0"
+fi
+
+# Setup hotkeys only once
+if [ ! -f ~/.hotkeys-setup ]; then
+    if [ -f /home/posuser/setup-hotkeys.sh ]; then
+        /home/posuser/setup-hotkeys.sh 2>/dev/null || true
+        touch ~/.hotkeys-setup
+    fi
+fi
+
+# Log successful login for debugging
+echo "$(date): posuser logged in with DISPLAY=$DISPLAY" >> /home/posuser/.login-log
+EOF
+
+# Set proper permissions and create log directory
+sudo chown -R posuser:posuser /home/posuser
+sudo chmod +x /home/posuser/.profile
+sudo mkdir -p /var/log
+sudo touch /var/log/posuser-session.log
+sudo chown posuser:posuser /var/log/posuser-session.log
+
+# Configure LightDM for focal with Auto Display Detection and posuser login fix
+if [ -f /etc/lightdm/lightdm.conf ]; then
+    sudo cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
+fi
+
+# Create a more compatible LightDM configuration
+sudo tee /etc/lightdm/lightdm.conf << 'EOF'
+[Seat:*]
+autologin-user=posuser
+autologin-user-timeout=0
+user-session=xfce
+# Use default X server configuration for better compatibility
+greeter-session=lightdm-gtk-greeter
+greeter-hide-users=false
+allow-user-switching=true
+allow-guest=false
+EOF
+
+# Create a session wrapper script for posuser to ensure proper environment
 sudo tee /usr/local/bin/posuser-session-wrapper << 'EOF'
 #!/bin/bash
 # Session wrapper for posuser to ensure proper display and environment setup
@@ -737,7 +697,7 @@ cd "$HOME"
 if [ -z "$DISPLAY" ]; then
     # Try to detect from lightdm
     if pgrep -f "lightdm.*X" >/dev/null; then
-        LIGHTDM_DISPLAY=$(ps aux | grep -E "lightdm.*X\s+:[0-9]+" | grep -oE ":[0-9]+" | head -1)
+        LIGHTDM_DISPLAY=$(ps aux | grep -E "X\s+:[0-9]+" | grep lightdm | grep -oE ":[0-9]+" | head -1)
         if [ ! -z "$LIGHTDM_DISPLAY" ]; then
             export DISPLAY="$LIGHTDM_DISPLAY"
         else
@@ -775,48 +735,7 @@ Type=Application
 DesktopNames=XFCE
 EOF
 
-# Create improved profile with display detection
-sudo tee /home/posuser/.profile << 'EOF'
-export PATH="/usr/local/bin:$PATH"
-
-# Safe display detection for login compatibility
-detect_display_safe() {
-    # Try current DISPLAY first
-    if [ ! -z "$DISPLAY" ]; then
-        echo "$DISPLAY"
-        return 0
-    fi
-    
-    # Try to detect display safely
-    if command -v detect-display >/dev/null 2>&1; then
-        DETECTED=$(timeout 5 detect-display 2>/dev/null || echo ":0")
-        echo "$DETECTED"
-    else
-        echo ":0"
-    fi
-}
-
-# Set DISPLAY with timeout protection
-export DISPLAY=$(detect_display_safe)
-
-# Fallback to :0 if still not set
-if [ -z "$DISPLAY" ]; then
-    export DISPLAY=":0"
-fi
-
-# Setup hotkeys only once
-if [ ! -f ~/.hotkeys-setup ]; then
-    if [ -f /home/posuser/setup-hotkeys.sh ]; then
-        /home/posuser/setup-hotkeys.sh 2>/dev/null || true
-        touch ~/.hotkeys-setup
-    fi
-fi
-
-# Log successful login for debugging
-echo "$(date): posuser logged in with DISPLAY=$DISPLAY" >> /home/posuser/.login-log
-EOF
-
-# XFCE power management configuration
+# XFCE power management
 sudo mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
 sudo tee /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -829,30 +748,7 @@ sudo tee /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-mana
 </channel>
 EOF
 
-# Set proper permissions and create log directory
-sudo chown -R posuser:posuser /home/posuser
-sudo chmod +x /home/posuser/.profile
-sudo mkdir -p /var/log
-sudo touch /var/log/posuser-session.log /var/log/pos-kiosk.log
-sudo chown posuser:posuser /var/log/posuser-session.log /var/log/pos-kiosk.log
-
-# Configure LightDM for focal with Auto Display Detection and posuser login fix
-if [ -f /etc/lightdm/lightdm.conf ]; then
-    sudo cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
-fi
-
-# Create a more compatible LightDM configuration
-sudo tee /etc/lightdm/lightdm.conf << 'EOF'
-[Seat:*]
-autologin-user=posuser
-autologin-user-timeout=0
-user-session=xfce
-# Use default X server configuration for better compatibility
-greeter-session=lightdm-gtk-greeter
-greeter-hide-users=false
-allow-user-switching=true
-allow-guest=false
-EOF
+sudo chown -R posuser:posuser /home/posuser/.config
 
 # Enable services
 sudo systemctl daemon-reload
@@ -864,25 +760,10 @@ sudo ufw allow 3000/tcp
 sudo ufw allow ssh
 echo "y" | sudo ufw enable
 
+curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash
+
 echo ""
-echo "=== FOCAL POS SETUP COMPLETE (ENHANCED FIXED VERSION) ==="
-echo ""
-echo "FIXES APPLIED:"
-echo "• Fixed Node.js path resolution in systemd service using NVM"
-echo "• Improved server readiness checking in kiosk script"
-echo "• Better error logging and handling"
-echo "• Proper browser session management"
-echo "• Enhanced display detection and X server waiting"
-echo "• Using NVM-installed Node.js instead of system Node.js"
-echo "• Added PM2 global installation via NVM"
-echo ""
-echo "NEW FEATURES ADDED:"
-echo "• stop-pos command - Cleanly stop POS system and kiosk"
-echo "• start-pos command - Start POS system and kiosk"
-echo "• Enhanced logging to /var/log/pos-kiosk.log"
-echo "• Complete command set from both script versions"
-echo "• Multi-screen support detection and logging"
-echo "• Session wrapper for better login compatibility"
+echo "=== FOCAL POS SETUP COMPLETE (No Snap Issues - Auto Display Detection) ==="
 echo ""
 echo "IMPORTANT: Reboot the system to start POS kiosk mode"
 echo "sudo reboot"
@@ -901,24 +782,4 @@ echo "• Hotkey: Ctrl+Alt+T (toggle admin/kiosk mode)"
 echo "• SSH: ssh posuser@[ip-address]"
 echo "• Display Check: run 'detect-display' command"
 echo ""
-echo "=== AVAILABLE COMMANDS ==="
-echo "• stop-pos        - Stop POS system cleanly"
-echo "• start-pos       - Start POS system"
-echo "• restart-pos     - Restart POS services"
-echo "• edit-env        - Edit environment variables"
-echo "• setup-tailnet   - Install and setup Tailscale"
-echo "• pos-logs        - View POS application logs"
-echo "• generate-key    - Generate new encryption key"
-echo "• check-env       - View current .env settings"
-echo "• pdf-storage     - Check PDF storage directory"
-echo "• admin-mode      - Toggle between kiosk and admin mode"
-echo "• kiosk-mode      - Start POS kiosk mode"
-echo "• detect-display  - Check current display configuration"
-echo ""
-echo "DEBUGGING:"
-echo "• Check logs: sudo journalctl -u pos-system -f"
-echo "• Check kiosk logs: tail -f /var/log/pos-kiosk.log"
-echo "• Manual test: sudo -u posuser bash -c 'cd /home/posuser/pos-system && source ~/.nvm/nvm.sh && node server.js'"
-echo ""
-echo "Run this script as posuser to start autostart and hotkeys: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/init.sh | bash"
 echo "System ready for reboot!"
