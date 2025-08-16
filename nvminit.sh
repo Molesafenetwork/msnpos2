@@ -97,15 +97,18 @@ mkdir -p "$POS_HOME/pos-system"
 mkdir -p "$POS_HOME/pos-system/logs"
 mkdir -p "$POS_HOME/pos-system/config"
 
+# Set proper ownership first
+chown -R posuser:posuser "$POS_HOME/pos-system"
+
 # Download MSNPos2
 log "Downloading MSNPos2 from GitHub..."
-cd "$POS_HOME"
-if [ -d "pos-system/msnpos2" ]; then
-    rm -rf pos-system/msnpos2
+cd "$POS_HOME/pos-system"
+if [ -d "msnpos2" ]; then
+    rm -rf msnpos2
 fi
-sudo -u posuser git clone https://github.com/Molesafenetwork/msnpos2.git pos-system/msnpos2
+sudo -u posuser git clone https://github.com/Molesafenetwork/msnpos2.git msnpos2
 
-# Set proper ownership before npm install
+# Ensure proper ownership after clone
 chown -R posuser:posuser "$POS_HOME/pos-system"
 
 # Install npm dependencies
