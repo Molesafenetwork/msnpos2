@@ -66,6 +66,17 @@ sudo apt install -y \
     build-essential \
     libssl-dev \
     xbindkeys
+    
+# Create posuser 1
+log "Creating posuser..."
+if id "posuser" &>/dev/null; then
+    warn "User posuser already exists, skipping creation"
+else
+    useradd -m -s /bin/bash posuser
+    echo "posuser:posuser123" | chpasswd
+    usermod -aG sudo posuser
+    log "Created posuser with password: posuser123"
+fi
 
 # Install NVM (Node Version Manager)
 log "Installing NVM..."
@@ -78,17 +89,6 @@ sudo -u posuser bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && nvm install
 # Install Tailscale
 log "Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
-
-# Create posuser
-log "Creating posuser..."
-if id "posuser" &>/dev/null; then
-    warn "User posuser already exists, skipping creation"
-else
-    useradd -m -s /bin/bash posuser
-    echo "posuser:posuser123" | chpasswd
-    usermod -aG sudo posuser
-    log "Created posuser with password: posuser123"
-fi
 
 # Create POS directory structure
 log "Setting up POS directory structure..."
