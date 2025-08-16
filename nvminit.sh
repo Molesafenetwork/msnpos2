@@ -41,11 +41,11 @@ log "Starting POS System Setup..."
 
 # Update system
 log "Updating system packages..."
-apt update && apt upgrade -y
+sudo apt update
 
 # Install required dependencies
 log "Installing dependencies..."
-apt install -y \
+sudo apt install -y \
     curl \
     wget \
     git \
