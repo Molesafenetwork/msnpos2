@@ -113,11 +113,15 @@ sudo -u posuser bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && cd '"$POS_H
 # Create environment file
 log "Creating environment configuration..."
 cat > "$POS_HOME/config/.env" << 'EOF'
-# POS System Configuration
-NODE_ENV=production
-PORT=3000
-POS_MODE=kiosk
-AUTO_START=true
+# change these default values during manual install (if using oemssdprod.sh this will be easier to change the setup scripts also setup admin commands which may be needed)
+MOLE_SAFE_USERS=admin:Admin1234,worker1:worker1
+SESSION_SECRET=123485358953
+ENCRYPTION_KEY=$CRYPTO_KEY
+COMPANY_NAME=Mole Safe Network
+COMPANY_ADDRESS=123 random road
+COMPANY_PHONE=61756666665
+COMPANY_EMAIL=support@mole-safe.net
+COMPANY_ABN=333333333
 EOF
 
 # Create comprehensive .bashrc for posuser
