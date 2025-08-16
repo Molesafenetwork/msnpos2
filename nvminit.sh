@@ -562,14 +562,17 @@ Description=POS System Service
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 User=posuser
 WorkingDirectory=/home/posuser/pos-system/msnpos2
 Environment=NVM_DIR=/home/posuser/.nvm
-ExecStart=/bin/bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && start-pos'
-ExecStop=/bin/bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && stop-pos'
+Environment=PATH=/home/posuser/.nvm/versions/node/v18.20.4/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStartPre=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && nvm use 18'
+ExecStart=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && node server.js'
 Restart=always
 RestartSec=10
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
@@ -587,9 +590,9 @@ Wants=graphical-session.target
 Type=simple
 User=posuser
 Environment=DISPLAY=:0
-ExecStartPre=/bin/sleep 10
-ExecStart=/bin/bash -c 'source /home/posuser/.bashrc && start-kiosk'
-ExecStop=/bin/bash -c 'source /home/posuser/.bashrc && stop-kiosk'
+ExecStartPre=/bin/sleep 15
+ExecStart=/bin/bash -c 'firefox --kiosk --new-instance --no-remote http://localhost:3000'
+ExecStop=/usr/bin/pkill firefox
 Restart=always
 RestartSec=5
 
