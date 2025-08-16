@@ -1,70 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MSNPOS Login</title>
+    <title>Login</title>
     <style>
-        /* Center the form on the page */
-        body {
+        /* Unique page wrapper */
+        .loginPage_molesafe_8392 {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f2f5;
         }
 
-        /* Form container */
-        .login-container {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            width: 300px;
+        /* Form container with unique class */
+        .loginBox_molesafe_9283 {
+            background-color: #ffffff;
+            padding: 50px 35px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            width: 350px;
             text-align: center;
-        }
-
-        /* Heading */
-        .login-container h1 {
-            margin-bottom: 30px;
-            color: #333;
+            border: 2px solid #e0e0e0;
         }
 
         /* Input fields */
-        .login-container input {
+        .loginInput_molesafe_1111 {
             width: 100%;
-            padding: 12px 15px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
+            padding: 14px 18px;
+            margin: 12px 0;
+            border: 1.5px solid #ccc;
+            border-radius: 8px;
+            font-size: 17px;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        /* Input focus effect */
+        .loginInput_molesafe_1111:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
         }
 
         /* Submit button */
-        .login-container button {
+        .loginButton_molesafe_9922 {
             width: 100%;
-            padding: 12px;
-            margin-top: 15px;
+            padding: 15px;
+            margin-top: 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
+            color: #ffffff;
+            font-size: 17px;
             cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
         }
 
-        .login-container button:hover {
+        .loginButton_molesafe_9922:hover {
             background-color: #45a049;
+            transform: translateY(-1px);
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h1>Login</h1>
-        <form action="/login" method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
+    <div class="loginPage_molesafe_8392">
+        <div class="loginBox_molesafe_9283">
+            <form action="/login" method="POST">
+                <input type="text" name="username" placeholder="Username" class="loginInput_molesafe_1111" required>
+                <input type="password" name="password" placeholder="Password" class="loginInput_molesafe_1111" required>
+                <button type="submit" class="loginButton_molesafe_9922">Login</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
