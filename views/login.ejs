@@ -11,17 +11,21 @@
             height: 100vh;
             font-family: 'Segoe UI', Arial, sans-serif;
             background-color: #f0f2f5;
+            padding: 10px; /* ensures some spacing on smaller screens */
         }
 
-        /* Form container with unique class */
+        /* Form container */
         .loginBox_molesafe_9283 {
             background-color: #ffffff;
-            padding: 50px 35px;
+            padding: 40px 30px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            width: 350px;
+            width: 100%;
+            max-width: 400px; /* max width so it doesn't get too wide */
+            min-width: 280px; /* min width to avoid very small forms */
             text-align: center;
             border: 2px solid #e0e0e0;
+            box-sizing: border-box; /* ensures padding included in width */
         }
 
         /* Input fields */
@@ -31,11 +35,11 @@
             margin: 12px 0;
             border: 1.5px solid #ccc;
             border-radius: 8px;
-            font-size: 17px;
+            font-size: 16px;
             transition: border 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
         }
 
-        /* Input focus effect */
         .loginInput_molesafe_1111:focus {
             outline: none;
             border-color: #4CAF50;
@@ -51,14 +55,27 @@
             border-radius: 8px;
             background-color: #4CAF50;
             color: #ffffff;
-            font-size: 17px;
+            font-size: 16px;
             cursor: pointer;
             transition: background-color 0.2s, transform 0.1s;
+            box-sizing: border-box;
         }
 
         .loginButton_molesafe_9922:hover {
             background-color: #45a049;
             transform: translateY(-1px);
+        }
+
+        /* Responsive adjustment for very small screens */
+        @media (max-width: 350px) {
+            .loginBox_molesafe_9283 {
+                padding: 30px 20px;
+            }
+            .loginInput_molesafe_1111,
+            .loginButton_molesafe_9922 {
+                font-size: 15px;
+                padding: 12px 15px;
+            }
         }
     </style>
 </head>
