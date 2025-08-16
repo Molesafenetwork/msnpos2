@@ -2,7 +2,7 @@
 
 # POS System Setup Script for Ubuntu 22.04 (Focal)
 # Designed for Orange Pi 3B with MSNPos2 integration
-# Usage: curl -sSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/nvminit.sh | bash
+# Usage: sudo curl -fsSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/nvminit.sh | sudo bash
 
 set -euo pipefail
 
