@@ -41,11 +41,11 @@ log "Starting POS System Setup..."
 
 # Update system
 log "Updating system packages..."
-sudo apt update
+apt update
 
 # Install required dependencies
 log "Installing dependencies..."
-sudo apt install -y \
+apt install -y \
     curl \
     wget \
     git \
@@ -67,7 +67,7 @@ sudo apt install -y \
     libssl-dev \
     xbindkeys
     
-# Create posuser 1
+# Create posuser 
 log "Creating posuser..."
 if id "posuser" &>/dev/null; then
     warn "User posuser already exists, skipping creation"
@@ -78,13 +78,13 @@ else
     log "Created posuser with password: posuser123"
 fi
 
-# Install NVM (Node Version Manager)
+# Install NVM (Node Version Manager) as posuser
 log "Installing NVM..."
 sudo -u posuser bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash'
 
 # Source NVM and install Node.js 18
 log "Installing Node.js 18 via NVM..."
-sudo -u posuser bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && nvm install 18 && nvm use 18 && nvm alias default 18'
+sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install 18 && nvm use 18 && nvm alias default 18'
 
 # Install Tailscale
 log "Installing Tailscale..."
@@ -92,27 +92,30 @@ curl -fsSL https://tailscale.com/install.sh | sh
 
 # Create POS directory structure
 log "Setting up POS directory structure..."
-POS_HOME="/home/posuser/pos"
-mkdir -p "$POS_HOME"
-mkdir -p "$POS_HOME/logs"
-mkdir -p "$POS_HOME/config"
+POS_HOME="/home/posuser"
+mkdir -p "$POS_HOME/pos-system"
+mkdir -p "$POS_HOME/pos-system/logs"
+mkdir -p "$POS_HOME/pos-system/config"
 
 # Download MSNPos2
 log "Downloading MSNPos2 from GitHub..."
 cd "$POS_HOME"
-if [ -d "msnpos2" ]; then
-    rm -rf msnpos2
+if [ -d "pos-system/msnpos2" ]; then
+    rm -rf pos-system/msnpos2
 fi
-git clone https://github.com/Molesafenetwork/msnpos2.git
-cd msnpos2
+sudo -u posuser git clone https://github.com/Molesafenetwork/msnpos2.git pos-system/msnpos2
+
+# Set proper ownership before npm install
+chown -R posuser:posuser "$POS_HOME/pos-system"
 
 # Install npm dependencies
 log "Installing Node.js dependencies..."
-sudo -u posuser bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && cd '"$POS_HOME"'/msnpos2 && npm install && npm install crypto-js'
+cd "$POS_HOME/pos-system/msnpos2"
+sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && npm install'
 
-# Create environment file
+# Create environment file in the msnpos2 directory
 log "Creating environment configuration..."
-cat > "$POS_HOME/config/.env" << 'EOF'
+cat > "$POS_HOME/pos-system/msnpos2/.env" << 'EOF'
 # change these default values during manual install (if using oemssdprod.sh this will be easier to change the setup scripts also setup admin commands which may be needed)
 MOLE_SAFE_USERS=admin:Admin1234,worker1:worker1
 SESSION_SECRET=123485358953
@@ -123,6 +126,9 @@ COMPANY_PHONE=61756666665
 COMPANY_EMAIL=support@mole-safe.net
 COMPANY_ABN=333333333
 EOF
+
+# Set proper ownership of .env file
+chown posuser:posuser "$POS_HOME/pos-system/msnpos2/.env"
 
 # Create comprehensive .bashrc for posuser
 log "Creating custom .bashrc for posuser..."
@@ -166,9 +172,10 @@ if ! shopt -oq posix; then
 fi
 
 # POS System Variables
-export POS_HOME="$HOME/pos"
+export POS_HOME="$HOME/pos-system"
 export POS_CONFIG="$POS_HOME/config"
 export POS_LOGS="$POS_HOME/logs"
+export POS_APP="$POS_HOME/msnpos2"
 export PATH="$PATH:$POS_HOME/bin"
 
 # Source NVM
@@ -187,7 +194,7 @@ fi
 
 # Edit environment configuration
 edit-env() {
-    local env_file="$POS_CONFIG/.env"
+    local env_file="$POS_APP/.env"
     echo "Editing POS environment configuration..."
     if command -v nano >/dev/null 2>&1; then
         nano "$env_file"
@@ -209,12 +216,16 @@ generate-key() {
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     
     if command -v node >/dev/null 2>&1; then
-        cd "$POS_HOME/msnpos2"
+        cd "$POS_APP"
         local key
         key=$(node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());")
         echo "Generated Crypto Key: $key"
         echo "$key" > "$POS_CONFIG/crypto.key"
         echo "Key saved to $POS_CONFIG/crypto.key"
+        
+        # Update .env file with the new key
+        sed -i "s/ENCRYPTION_KEY=\$CRYPTO_KEY/ENCRYPTION_KEY=$key/" "$POS_APP/.env"
+        echo "Updated .env file with new encryption key"
     else
         echo "Error: Node.js not found. Please ensure NVM and Node.js 18 are properly installed."
         return 1
@@ -235,7 +246,7 @@ start-pos() {
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     
-    cd "$POS_HOME/msnpos2"
+    cd "$POS_APP"
     if [ -f ".env" ]; then
         source .env
     fi
@@ -322,7 +333,7 @@ logs-pos() {
     else
         echo "No log file found for today: $log_file"
         echo "Available logs:"
-        ls -la "$POS_LOGS/"
+        ls -la "$POS_LOGS/" 2>/dev/null || echo "No logs directory found"
     fi
 }
 
@@ -447,7 +458,7 @@ update-pos() {
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     
-    cd "$POS_HOME/msnpos2"
+    cd "$POS_APP"
     git pull origin main
     npm install
     echo "POS system updated. Run 'restart-pos' to apply changes."
@@ -457,8 +468,9 @@ backup-pos() {
     local backup_dir="$HOME/pos-backup-$(date +%Y%m%d-%H%M%S)"
     echo "Creating POS backup at: $backup_dir"
     mkdir -p "$backup_dir"
-    cp -r "$POS_CONFIG" "$backup_dir/"
-    cp -r "$POS_LOGS" "$backup_dir/"
+    cp -r "$POS_CONFIG" "$backup_dir/" 2>/dev/null || true
+    cp -r "$POS_LOGS" "$backup_dir/" 2>/dev/null || true
+    cp "$POS_APP/.env" "$backup_dir/" 2>/dev/null || true
     echo "Backup created successfully."
 }
 
@@ -480,6 +492,7 @@ pos-info() {
     fi
     
     echo "POS Home: $POS_HOME"
+    echo "POS App: $POS_APP"
     echo "Config Dir: $POS_CONFIG"
     echo "Logs Dir: $POS_LOGS"
     echo "Uptime: $(uptime)"
@@ -548,7 +561,7 @@ After=network.target
 [Service]
 Type=forking
 User=posuser
-WorkingDirectory=/home/posuser/pos/msnpos2
+WorkingDirectory=/home/posuser/pos-system/msnpos2
 Environment=NVM_DIR=/home/posuser/.nvm
 ExecStart=/bin/bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && start-pos'
 ExecStop=/bin/bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && stop-pos'
@@ -735,17 +748,6 @@ cat > /home/posuser/.xbindkeysrc << 'EOF'
     control+alt + Delete
 EOF
 
-# Add xbindkeys to XFCE autostart
-cat > /home/posuser/.config/autostart/xbindkeys.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=Hotkeys
-Exec=xbindkeys
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-EOF
-
 # Set proper permissions
 log "Setting file permissions..."
 chown -R posuser:posuser /home/posuser
@@ -816,14 +818,22 @@ EOF
 
 # Generate initial crypto key
 log "Generating initial crypto key..."
-sudo -u posuser bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && generate-key'
+sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system/msnpos2 && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());" > /home/posuser/pos-system/config/crypto.key 2>/dev/null || echo "Will generate key after first start"'
+
+# Update .env with generated key if successful
+if [ -f "/home/posuser/pos-system/config/crypto.key" ]; then
+    CRYPTO_KEY=$(cat /home/posuser/pos-system/config/crypto.key)
+    sed -i "s/ENCRYPTION_KEY=\$CRYPTO_KEY/ENCRYPTION_KEY=$CRYPTO_KEY/" /home/posuser/pos-system/msnpos2/.env
+    log "Crypto key generated and configured"
+fi
 
 # Start services
 log "Starting POS system..."
 systemctl start pos-system.service
 
 # Create setup completion marker
-echo "$(date)" > /home/posuser/pos/config/.setup_complete
+echo "$(date)" > /home/posuser/pos-system/config/.setup_complete
+chown posuser:posuser /home/posuser/pos-system/config/.setup_complete
 
 # Final instructions
 log "Setup completed successfully!"
@@ -835,6 +845,13 @@ echo ""
 echo "User Accounts:"
 echo "  - posuser / posuser123 (auto-login enabled)"
 echo "  - orangepi user still exists (use 'delete-orangepi-user' to remove)"
+echo ""
+echo "Directory Structure:"
+echo "  - POS Home: /home/posuser/pos-system/"
+echo "  - POS App: /home/posuser/pos-system/msnpos2/"
+echo "  - Config: /home/posuser/pos-system/config/"
+echo "  - Logs: /home/posuser/pos-system/logs/"
+echo "  - Environment: /home/posuser/pos-system/msnpos2/.env"
 echo ""
 echo "System will automatically:"
 echo "  - Start POS system on boot"
@@ -858,8 +875,9 @@ echo "3. POS accessible at: http://localhost:3000 (automatic)"
 echo "4. Technicians: Use Ctrl+Alt+T for admin access"
 echo "5. Configure Tailscale: sudo tailscale up (in admin mode)"
 echo ""
-echo "Logs location: /home/posuser/pos/logs/"
-echo "Config location: /home/posuser/pos/config/"
+echo "Logs location: /home/posuser/pos-system/logs/"
+echo "Config location: /home/posuser/pos-system/config/"
+echo "Environment file: /home/posuser/pos-system/msnpos2/.env"
 echo ""
 echo "==============================================="
 
