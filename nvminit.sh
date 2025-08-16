@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# POS System Setup Script for Ubuntu 22.04 (Focal)
+# POS System Setup Script for Ubuntu 22.04 (Focal) - FIXED VERSION
 # Designed for Orange Pi 3B with MSNPos2 integration
 # Usage: sudo curl -fsSL https://raw.githubusercontent.com/Molesafenetwork/msnpos2/main/nvminit.sh | sudo bash
 
@@ -37,13 +37,13 @@ if ! grep -q "22.04" /etc/os-release; then
     warn "This script is designed for Ubuntu 22.04. Proceeding anyway..."
 fi
 
-log "Starting POS System Setup..."
+log "Starting POS System Setup (Fixed Version)..."
 
 # Update system
 log "Updating system packages..."
-apt update
+apt update && apt upgrade -y
 
-# Install required dependencies
+# Install required dependencies with proper XFCE environment
 log "Installing dependencies..."
 apt install -y \
     curl \
@@ -51,32 +51,50 @@ apt install -y \
     git \
     firefox \
     xfce4 \
+    xfce4-goodies \
     xfce4-terminal \
+    xfce4-session \
+    xfce4-settings \
     lightdm \
     lightdm-gtk-greeter \
+    lightdm-gtk-greeter-settings \
     x11-xserver-utils \
     xorg \
-    unclutter \
-    sudo \
-    pwgen \
     xinit \
     xserver-xorg \
     x11-session-utils \
+    unclutter \
+    sudo \
+    pwgen \
     autojump \
     build-essential \
     libssl-dev \
-    xbindkeys
-    
-# Create posuser 
+    xbindkeys \
+    dbus-x11 \
+    at-spi2-core \
+    desktop-file-utils \
+    shared-mime-info
+
+# Ensure systemd services are properly configured
+systemctl enable lightdm
+systemctl set-default graphical.target
+
+# Create posuser with proper shell and groups
 log "Creating posuser..."
 if id "posuser" &>/dev/null; then
     warn "User posuser already exists, skipping creation"
 else
     useradd -m -s /bin/bash posuser
     echo "posuser:posuser123" | chpasswd
-    usermod -aG sudo posuser
+    usermod -aG sudo,audio,video,plugdev,netdev,bluetooth posuser
     log "Created posuser with password: posuser123"
 fi
+
+# Create proper home directory structure first
+log "Setting up user directories..."
+mkdir -p /home/posuser/{Desktop,Documents,Downloads,Pictures,Music,Videos}
+mkdir -p /home/posuser/.config/{xfce4,autostart}
+mkdir -p /home/posuser/.local/share/applications
 
 # Install NVM (Node Version Manager) as posuser
 log "Installing NVM..."
@@ -554,134 +572,94 @@ echo "System will start in kiosk mode on boot"
 echo "Use Alt+Ctrl+T to toggle between terminal and kiosk mode"
 EOF
 
-# Create systemd service for POS auto-start
-log "Creating POS systemd service..."
-cat > /etc/systemd/system/pos-system.service << 'EOF'
-[Unit]
-Description=POS System Service
-After=network.target
+# Create proper XFCE configuration BEFORE creating autostart files
+log "Setting up proper XFCE environment..."
 
-[Service]
-Type=simple
-User=posuser
-WorkingDirectory=/home/posuser/pos-system/msnpos2
-Environment=NVM_DIR=/home/posuser/.nvm
-Environment=PATH=/home/posuser/.nvm/versions/node/v18.20.4/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStartPre=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && nvm use 18'
-ExecStart=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && node server.js'
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Create kiosk autostart service
-log "Creating kiosk autostart service..."
-cat > /etc/systemd/system/pos-kiosk.service << 'EOF'
-[Unit]
-Description=POS Kiosk Mode
-After=graphical-session.target
-Wants=graphical-session.target
-
-[Service]
-Type=simple
-User=posuser
-Environment=DISPLAY=:0
-ExecStartPre=/bin/sleep 15
-ExecStart=/bin/bash -c 'firefox --kiosk --new-instance --no-remote http://localhost:3000'
-ExecStop=/usr/bin/pkill firefox
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=graphical-session.target
-EOF
-
-# Configure auto-login for posuser
-log "Configuring auto-login..."
-mkdir -p /etc/systemd/system/getty@tty1.service.d
-cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'EOF'
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin posuser --noclear %I $TERM
-EOF
-
-# Configure LightDM for auto-login
-log "Configuring LightDM for graphical auto-login..."
-cat > /etc/lightdm/lightdm.conf << 'EOF'
-[Seat:*]
-autologin-user=posuser
-autologin-user-timeout=0
-user-session=xfce
-EOF
-
-# Create XFCE autostart for posuser - KIOSK MODE ONLY
-log "Creating XFCE autostart configuration for kiosk mode..."
-mkdir -p /home/posuser/.config/autostart
-
-# POS System startup
-cat > /home/posuser/.config/autostart/pos-system.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=POS System
-Exec=/bin/bash -c 'source ~/.bashrc && source ~/.nvm/nvm.sh && start-pos'
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-StartupNotify=false
-EOF
-
-# Kiosk mode startup (delayed to ensure POS is ready)
-cat > /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=POS Kiosk Mode
-Exec=/bin/bash -c 'sleep 8 && source ~/.bashrc && start-kiosk'
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-StartupNotify=false
-EOF
-
-# Hotkeys startup
-cat > /home/posuser/.config/autostart/xbindkeys.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=POS Hotkeys
-Exec=xbindkeys
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-StartupNotify=false
-EOF
-
-# Create XFCE session configuration for kiosk mode
+# Create minimal XFCE session configuration
 mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
+
+# XFCE Session configuration (fixed)
 cat > /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <channel name="xfce4-session" version="1.0">
+  <property name="general" type="empty">
+    <property name="FailsafeSessionName" type="string" value="Failsafe"/>
+    <property name="SessionName" type="string" value="Default"/>
+    <property name="SaveOnExit" type="bool" value="false"/>
+  </property>
+  <property name="sessions" type="empty">
+    <property name="Failsafe" type="empty">
+      <property name="IsFailsafe" type="bool" value="true"/>
+      <property name="Count" type="int" value="5"/>
+      <property name="Client0_Command" type="array">
+        <value type="string" value="xfwm4"/>
+      </property>
+      <property name="Client0_PerScreen" type="bool" value="false"/>
+      <property name="Client1_Command" type="array">
+        <value type="string" value="xfce4-panel"/>
+      </property>
+      <property name="Client1_PerScreen" type="bool" value="false"/>
+      <property name="Client2_Command" type="array">
+        <value type="string" value="xfdesktop"/>
+      </property>
+      <property name="Client2_PerScreen" type="bool" value="false"/>
+      <property name="Client3_Command" type="array">
+        <value type="string" value="xfce4-session"/>
+      </property>
+      <property name="Client3_PerScreen" type="bool" value="false"/>
+      <property name="Client4_Command" type="array">
+        <value type="string" value="Thunar"/>
+        <value type="string" value="--daemon"/>
+      </property>
+      <property name="Client4_PerScreen" type="bool" value="false"/>
+    </property>
+  </property>
   <property name="startup" type="empty">
     <property name="screensaver" type="empty">
       <property name="enabled" type="bool" value="false"/>
     </property>
   </property>
+</channel>
+EOF
+
+# Window Manager settings
+cat > /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfwm4" version="1.0">
   <property name="general" type="empty">
-    <property name="SaveOnExit" type="bool" value="false"/>
-    <property name="SessionName" type="string" value="POS-Kiosk"/>
-  </property>
-  <property name="sessions" type="empty">
-    <property name="Failsafe" type="empty">
-      <property name="IsFailsafe" type="bool" value="true"/>
-      <property name="Count" type="int" value="0"/>
-    </property>
+    <property name="workspace_count" type="int" value="1"/>
+    <property name="borderless_maximize" type="bool" value="true"/>
+    <property name="focus_mode" type="string" value="click"/>
+    <property name="placement_mode" type="string" value="center"/>
   </property>
 </channel>
 EOF
 
-# Configure XFCE panel to be hidden by default (kiosk mode)
+# Desktop settings - minimal configuration
+cat > /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfce4-desktop" version="1.0">
+  <property name="backdrop" type="empty">
+    <property name="screen0" type="empty">
+      <property name="monitor0" type="empty">
+        <property name="workspace0" type="empty">
+          <property name="color-style" type="int" value="0"/>
+          <property name="image-style" type="int" value="5"/>
+          <property name="last-image" type="string" value=""/>
+        </property>
+      </property>
+    </property>
+  </property>
+  <property name="desktop-icons" type="empty">
+    <property name="style" type="int" value="0"/>
+  </property>
+  <property name="desktop-menu" type="empty">
+    <property name="show" type="bool" value="false"/>
+  </property>
+</channel>
+EOF
+
+# Panel configuration (hidden by default for kiosk)
 mkdir -p /home/posuser/.config/xfce4/panel
 cat > /home/posuser/.config/xfce4/panel/panels.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -699,19 +677,119 @@ cat > /home/posuser/.config/xfce4/panel/panels.xml << 'EOF'
 </panels>
 EOF
 
-# Configure XFCE desktop to have no icons or right-click menu
-mkdir -p /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml
-cat > /home/posuser/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfce4-desktop" version="1.0">
-  <property name="desktop-icons" type="empty">
-    <property name="style" type="int" value="0"/>
-    <property name="use-custom-font-size" type="bool" value="false"/>
-  </property>
-  <property name="desktop-menu" type="empty">
-    <property name="show" type="bool" value="false"/>
-  </property>
-</channel>
+# Create systemd service for POS auto-start (FIXED)
+log "Creating POS systemd service..."
+cat > /etc/systemd/system/pos-system.service << 'EOF'
+[Unit]
+Description=POS System Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=posuser
+Group=posuser
+WorkingDirectory=/home/posuser/pos-system/msnpos2
+Environment="NVM_DIR=/home/posuser/.nvm"
+Environment="PATH=/home/posuser/.nvm/versions/node/v18.20.4/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStartPre=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && nvm use 18'
+ExecStart=/bin/bash -c 'source /home/posuser/.nvm/nvm.sh && node server.js'
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Configure auto-login for posuser (FIXED)
+log "Configuring console auto-login..."
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'EOF'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin posuser --noclear %I $TERM
+Type=idle
+EOF
+
+# Configure LightDM for graphical auto-login (FIXED)
+log "Configuring LightDM for graphical auto-login..."
+cat > /etc/lightdm/lightdm.conf << 'EOF'
+[Seat:*]
+autologin-user=posuser
+autologin-user-timeout=0
+user-session=xfce
+greeter-session=lightdm-gtk-greeter
+greeter-hide-users=false
+greeter-allow-guest=false
+greeter-show-manual-login=true
+greeter-show-remote-login=true
+EOF
+
+# Create a proper .xsessionrc for display configuration
+cat > /home/posuser/.xsessionrc << 'EOF'
+#!/bin/bash
+# Disable screen blanking and power management
+xset s off
+xset -dpms
+xset s noblank
+xset s 0 0
+
+# Start session bus
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval `dbus-launch --sh-syntax`
+fi
+
+# Ensure proper PATH
+export PATH="$HOME/.nvm/versions/node/v18.20.4/bin:$PATH"
+
+# Source NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+EOF
+
+# Create XFCE autostart files (DELAYED start to prevent conflicts)
+log "Creating XFCE autostart configuration..."
+mkdir -p /home/posuser/.config/autostart
+
+# POS System startup (delayed)
+cat > /home/posuser/.config/autostart/pos-system.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=POS System
+Exec=/bin/bash -c 'sleep 5 && source ~/.bashrc && source ~/.nvm/nvm.sh && start-pos'
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+StartupNotify=false
+EOF
+
+# Kiosk mode startup (more delayed to ensure POS is ready)
+cat > /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=POS Kiosk Mode
+Exec=/bin/bash -c 'sleep 15 && source ~/.bashrc && start-kiosk'
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+StartupNotify=false
+EOF
+
+# Hotkeys startup
+cat > /home/posuser/.config/autostart/xbindkeys.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=POS Hotkeys
+Exec=xbindkeys
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+StartupNotify=false
 EOF
 
 # Create hotkey script for terminal toggle
@@ -754,23 +832,70 @@ cat > /home/posuser/.xbindkeysrc << 'EOF'
     control+alt + Delete
 EOF
 
-# Set proper permissions
+# Create proper .profile to ensure environment is loaded
+log "Creating .profile for posuser..."
+cat > /home/posuser/.profile << 'EOF'
+# ~/.profile: executed by the command interpreter for login shells.
+
+# Source .bashrc if it exists
+if [ -n "$BASH_VERSION" ]; then
+    if [ -f "$HOME/.bashrc" ]; then
+        . "$HOME/.bashrc"
+    fi
+fi
+
+# Set PATH for user bin
+if [ -d "$HOME/bin" ] ; then
+    PATH="$HOME/bin:$PATH"
+fi
+
+if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+
+# Source NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+EOF
+
+# Fix session handling by creating proper session script
+log "Creating session startup script..."
+cat > /home/posuser/.xprofile << 'EOF'
+#!/bin/bash
+# .xprofile - executed at the beginning of X session
+
+# Start D-Bus user session if not already running
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval $(dbus-launch --sh-syntax)
+fi
+
+# Source bashrc and profile
+source ~/.profile
+source ~/.bashrc 2>/dev/null || true
+
+# Disable screen blanking
+xset s off
+xset -dpms
+xset s noblank
+
+# Set background to solid black
+xsetroot -solid black 2>/dev/null || true
+
+# Start essential services
+xbindkeys &
+
+# Log session start
+echo "$(date): XFCE session started for posuser" >> ~/.xsession-errors
+EOF
+chmod +x /home/posuser/.xprofile
+
+# Set proper permissions for all user files
 log "Setting file permissions..."
 chown -R posuser:posuser /home/posuser
 chmod +x /home/posuser/.bashrc
-
-# Enable services
-log "Enabling systemd services..."
-systemctl daemon-reload
-systemctl enable pos-system.service
-systemctl enable pos-kiosk.service
-
-# Configure firewall (if UFW is installed)
-if command -v ufw >/dev/null 2>&1; then
-    log "Configuring firewall..."
-    ufw allow 3000/tcp
-    ufw allow ssh
-fi
+chmod +x /home/posuser/.profile
+chmod +x /home/posuser/.xprofile
+chmod +x /home/posuser/.xsessionrc
 
 # Create completion script
 log "Creating bash completion..."
@@ -799,32 +924,36 @@ for cmd in start-pos stop-pos restart-pos status-pos logs-pos update-pos backup-
 done
 EOF
 
-# Final system configuration
-log "Performing final system configuration..."
+# Enable services (FIXED ORDER)
+log "Enabling systemd services..."
+systemctl daemon-reload
 
-# Disable screen blanking and configure XFCE for kiosk mode
-cat > /home/posuser/.xsessionrc << 'EOF'
-# Disable screen blanking and power management
-xset s off
-xset -dpms
-xset s noblank
+# Ensure graphical target is default
+systemctl set-default graphical.target
 
-# Disable screensaver
-xset s 0 0
+# Enable LightDM
+systemctl enable lightdm.service
 
-# Start xbindkeys for admin hotkey
-xbindkeys &
+# Enable POS system service
+systemctl enable pos-system.service
 
-# Hide cursor initially (will be managed by kiosk mode)
-unclutter -idle 1 -root &
+# Configure firewall (if UFW is installed)
+if command -v ufw >/dev/null 2>&1; then
+    log "Configuring firewall..."
+    ufw allow 3000/tcp
+    ufw allow ssh
+fi
 
-# Set kiosk-friendly window manager settings
-export XFCE_PANEL_MIGRATE_DEFAULT=1
-EOF
-
-# Generate initial crypto key
+# Generate initial crypto key (FIXED)
 log "Generating initial crypto key..."
-sudo -u posuser bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && cd /home/posuser/pos-system/msnpos2 && node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());" > /home/posuser/pos-system/config/crypto.key 2>/dev/null || echo "Will generate key after first start"'
+sudo -u posuser bash -c '
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    cd /home/posuser/pos-system/msnpos2
+    if command -v node >/dev/null 2>&1; then
+        node -e "const CryptoJS = require(\"crypto-js\"); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());" > /home/posuser/pos-system/config/crypto.key 2>/dev/null || echo "Will generate key after first start"
+    fi
+' || warn "Crypto key will be generated on first start"
 
 # Update .env with generated key if successful
 if [ -f "/home/posuser/pos-system/config/crypto.key" ]; then
@@ -833,24 +962,72 @@ if [ -f "/home/posuser/pos-system/config/crypto.key" ]; then
     log "Crypto key generated and configured"
 fi
 
-# Start services
-log "Starting POS system..."
-systemctl start pos-system.service
+# Test posuser login capability
+log "Testing posuser session setup..."
+sudo -u posuser bash -c '
+    export HOME=/home/posuser
+    cd /home/posuser
+    source .profile
+    source .bashrc
+    echo "User environment test completed"
+' || warn "User environment may need manual verification"
+
+# Create a desktop entry for easier testing
+log "Creating desktop shortcut for testing..."
+cat > /home/posuser/Desktop/POS-Admin.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=POS Admin Terminal
+Exec=xfce4-terminal -e "bash -c 'source ~/.bashrc; pos-help; bash'"
+Icon=utilities-terminal
+Categories=System;
+EOF
+chmod +x /home/posuser/Desktop/POS-Admin.desktop
+chown posuser:posuser /home/posuser/Desktop/POS-Admin.desktop
 
 # Create setup completion marker
 echo "$(date)" > /home/posuser/pos-system/config/.setup_complete
 chown posuser:posuser /home/posuser/pos-system/config/.setup_complete
 
+# Start POS system service now for testing
+log "Starting POS system service for testing..."
+systemctl start pos-system.service || warn "POS service failed to start - will retry on reboot"
+
+# Create a manual session recovery script
+log "Creating session recovery script..."
+cat > /home/posuser/fix-session.sh << 'EOF'
+#!/bin/bash
+# Session recovery script - run if login fails
+
+echo "Fixing XFCE session for posuser..."
+
+# Ensure proper ownership
+sudo chown -R posuser:posuser /home/posuser
+
+# Restart display manager
+sudo systemctl restart lightdm
+
+echo "Session recovery attempted. Try logging in again."
+EOF
+chmod +x /home/posuser/fix-session.sh
+
 # Final instructions
 log "Setup completed successfully!"
 echo ""
 echo "==============================================="
-echo "POS System Setup Complete!"
+echo "POS System Setup Complete (FIXED VERSION)!"
 echo "==============================================="
 echo ""
 echo "User Accounts:"
 echo "  - posuser / posuser123 (auto-login enabled)"
 echo "  - orangepi user still exists (use 'delete-orangepi-user' to remove)"
+echo ""
+echo "FIXED ISSUES:"
+echo "  - Proper XFCE session configuration"
+echo "  - Fixed LightDM auto-login"
+echo "  - Corrected systemd service dependencies"
+echo "  - Added proper session startup scripts"
+echo "  - Fixed permissions and environment loading"
 echo ""
 echo "Directory Structure:"
 echo "  - POS Home: /home/posuser/pos-system/"
@@ -862,7 +1039,7 @@ echo ""
 echo "System will automatically:"
 echo "  - Start POS system on boot"
 echo "  - Launch in full kiosk mode (no desktop access)"
-echo "  - Auto-login as posuser"
+echo "  - Auto-login as posuser to graphical session"
 echo "  - Hide all desktop elements and shortcuts"
 echo ""
 echo "Available commands (run 'pos-help' for full list):"
@@ -874,12 +1051,19 @@ echo ""
 echo "Hotkeys:"
 echo "  - Ctrl+Alt+T: Admin mode for technicians only"
 echo ""
+echo "Troubleshooting:"
+echo "  - If login fails, switch to tty (Ctrl+Alt+F2) and run:"
+echo "    sudo /home/posuser/fix-session.sh"
+echo "  - Check logs with: journalctl -u lightdm -f"
+echo "  - Test session with: sudo -u posuser startxfce4"
+echo ""
 echo "Next steps:"
 echo "1. Reboot the system: sudo reboot"
-echo "2. System will auto-login and start in KIOSK MODE"
-echo "3. POS accessible at: http://localhost:3000 (automatic)"
-echo "4. Technicians: Use Ctrl+Alt+T for admin access"
-echo "5. Configure Tailscale: sudo tailscale up (in admin mode)"
+echo "2. System should auto-login to XFCE desktop"
+echo "3. Kiosk mode should start automatically after 15 seconds"
+echo "4. POS accessible at: http://localhost:3000 (automatic)"
+echo "5. Technicians: Use Ctrl+Alt+T for admin access"
+echo "6. Configure Tailscale: sudo tailscale up (in admin mode)"
 echo ""
 echo "Logs location: /home/posuser/pos-system/logs/"
 echo "Config location: /home/posuser/pos-system/config/"
@@ -888,11 +1072,15 @@ echo ""
 echo "==============================================="
 
 # Prompt for reboot
-read -p "Setup complete. Reboot now? (y/N): " -n 1 -r
+read -p "Setup complete. Reboot now to test the fixed configuration? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     log "Rebooting system..."
     reboot
 else
-    log "Please reboot manually to complete setup."
+    log "Please reboot manually to test the fixed setup."
+    echo ""
+    echo "To test manually before reboot:"
+    echo "  sudo systemctl restart lightdm"
+    echo "  sudo -u posuser startxfce4  # (from VTY if needed)"
 fi
