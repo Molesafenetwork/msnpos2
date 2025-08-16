@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Hotkey and PDF Viewer Fixes for POS System
-# Run this script to fix hotkey issues and add PDF invoice viewer
-# Usage: sudo bash hotkeyfixes.sh
+# Smart PDF Toggle Enhancement for POS System
+# Makes Alt+0 intelligently toggle between PDF viewer and kiosk mode
+# Usage: sudo bash smart_pdf_toggle.sh
 
 set -euo pipefail
 
@@ -29,146 +29,123 @@ if [[ $EUID -ne 0 ]]; then
    error "This script must be run as root (use sudo)"
 fi
 
-log "Fixing hotkeys and adding PDF invoice viewer..."
+log "Enhancing PDF viewer with smart toggle functionality..."
 
-# Install additional packages needed for PDF handling and better hotkey support
-log "Installing PDF and hotkey support packages..."
-apt update
-apt install -y \
-    evince \
-    thunar \
-    thunar-archive-plugin \
-    thunar-media-tags-plugin \
-    xdotool \
-    wmctrl \
-    cups \
-    cups-pdf \
-    printer-driver-all \
-    system-config-printer \
-    at-spi2-core \
-    gvfs \
-    gvfs-backends \
-    xfce4-notifyd
-
-# Create enhanced hotkey script that works better with kiosk mode
-log "Creating enhanced hotkey scripts..."
-mkdir -p /home/posuser/bin
-
-# Enhanced admin toggle script that uses xdotool for better window management
-cat > /home/posuser/bin/toggle-terminal.sh << 'EOF'
+# Create enhanced smart PDF toggle script
+cat > /home/posuser/bin/smart-pdf-toggle.sh << 'EOF'
 #!/bin/bash
 
-# Enhanced admin mode toggle that works with kiosk Firefox
+# Smart PDF Toggle Script - Alt+0 hotkey handler
 export DISPLAY=:0
 
-# Function to check if Firefox is in kiosk mode
-is_kiosk_active() {
-    if pgrep -f "firefox.*--kiosk" > /dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Function to check if admin terminal is open
-is_admin_active() {
-    if wmctrl -l | grep -q "POS Admin Mode"; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-if is_kiosk_active && ! is_admin_active; then
-    # Currently in kiosk mode, enter admin mode
-    echo "$(date): Entering admin mode" >> ~/.hotkey.log
-    
-    # Kill Firefox kiosk
-    pkill -f "firefox.*--kiosk" || true
-    pkill unclutter || true
-    
-    # Show XFCE panel
-    xfconf-query -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 0 2>/dev/null || true
-    xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 28 2>/dev/null || true
-    
-    # Wait a moment for Firefox to close
-    sleep 1
-    
-    # Open fullscreen admin terminal
-    xfce4-terminal \
-        --title="POS Admin Mode - Press Ctrl+Alt+T to return to kiosk" \
-        --fullscreen \
-        --command="bash -c 'source ~/.bashrc; echo \"=== POS ADMIN MODE ===\"; echo \"Type pos-help for commands\"; echo \"Press Ctrl+Alt+T to return to kiosk mode\"; echo; bash'" &
-    
-elif is_admin_active; then
-    # Currently in admin mode, return to kiosk
-    echo "$(date): Returning to kiosk mode" >> ~/.hotkey.log
-    
-    # Close admin terminal
-    wmctrl -c "POS Admin Mode" || pkill xfce4-terminal || true
-    
-    # Hide panel
-    xfconf-query -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2 2>/dev/null || true
-    xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 1 2>/dev/null || true
-    
-    # Wait for terminal to close
-    sleep 1
-    
-    # Start Firefox kiosk mode
-    source ~/.bashrc
-    firefox --kiosk --new-instance --no-remote "http://localhost:3000" &
-    
-    # Hide cursor
-    unclutter -idle 1 -root &
-    
-else
-    # Fallback: just toggle whatever is running
-    echo "$(date): Fallback toggle" >> ~/.hotkey.log
-    if pgrep firefox > /dev/null; then
-        pkill firefox
-        xfce4-terminal --fullscreen --title="POS Admin Mode" &
-    else
-        pkill xfce4-terminal || true
-        source ~/.bashrc
-        firefox --kiosk --new-instance --no-remote "http://localhost:3000" &
-        unclutter -idle 1 -root &
-    fi
-fi
-EOF
-
-# PDF invoice viewer script
-cat > /home/posuser/bin/view-latest-invoice.sh << 'EOF'
-#!/bin/bash
-
-# View latest downloaded PDF (client invoice)
-export DISPLAY=:0
+# Log file for debugging
+LOG_FILE="$HOME/.pdf-toggle.log"
+STATE_FILE="$HOME/.pdf-viewer-state"
 
 log_action() {
-    echo "$(date): $1" >> ~/.invoice-viewer.log
+    echo "$(date): $1" >> "$LOG_FILE"
 }
 
-log_action "Invoice viewer hotkey triggered"
+# Function to check what's currently active
+get_current_state() {
+    local pdf_viewer_active=false
+    local kiosk_active=false
+    
+    # Check for PDF viewers (evince, thunar with PDF)
+    if wmctrl -l | grep -qi "evince\|document viewer"; then
+        pdf_viewer_active=true
+    elif wmctrl -l | grep -qi "thunar.*\.pdf\|file manager.*\.pdf"; then
+        pdf_viewer_active=true
+    elif pgrep -f "evince.*\.pdf" > /dev/null; then
+        pdf_viewer_active=true
+    fi
+    
+    # Check for kiosk mode
+    if pgrep -f "firefox.*--kiosk" > /dev/null; then
+        kiosk_active=true
+    fi
+    
+    if $pdf_viewer_active; then
+        echo "pdf"
+    elif $kiosk_active; then
+        echo "kiosk"
+    else
+        echo "unknown"
+    fi
+}
 
-# Common download locations to search
-DOWNLOAD_DIRS=(
-    "$HOME/Downloads"
-    "$HOME/Desktop"
-    "/tmp"
-    "$HOME/pos-system/invoices"
-    "$HOME/Documents"
-)
+# Function to close all PDF viewers
+close_pdf_viewers() {
+    log_action "Closing PDF viewers"
+    
+    # Close evince
+    wmctrl -c "evince" 2>/dev/null || true
+    wmctrl -c "Document Viewer" 2>/dev/null || true
+    pkill evince 2>/dev/null || true
+    
+    # Close thunar if it has PDF open
+    if wmctrl -l | grep -qi "thunar.*\.pdf"; then
+        wmctrl -c "thunar" 2>/dev/null || true
+    fi
+    
+    # Wait for processes to close
+    sleep 1
+    
+    # Force kill if still running
+    pkill -f "evince.*\.pdf" 2>/dev/null || true
+}
 
-# Create invoices directory if it doesn't exist
-mkdir -p "$HOME/pos-system/invoices"
+# Function to ensure kiosk is running
+ensure_kiosk() {
+    log_action "Ensuring kiosk mode is active"
+    
+    if ! pgrep -f "firefox.*--kiosk" > /dev/null; then
+        log_action "Starting kiosk mode"
+        source ~/.bashrc
+        
+        # Hide panel
+        xfconf-query -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2 2>/dev/null || true
+        xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 1 2>/dev/null || true
+        
+        # Start Firefox kiosk
+        firefox \
+            --kiosk \
+            --new-instance \
+            --no-remote \
+            --class="POSKiosk" \
+            "http://localhost:3000" &
+        
+        # Hide cursor
+        unclutter -idle 1 -root &
+        
+        # Wait for Firefox to start and ensure fullscreen
+        sleep 3
+        wmctrl -r "POSKiosk" -b add,fullscreen 2>/dev/null || true
+    else
+        log_action "Kiosk already running, bringing to front"
+        wmctrl -a "POSKiosk" 2>/dev/null || wmctrl -a "firefox" 2>/dev/null || true
+    fi
+}
 
-# Function to find the most recent PDF
-find_latest_pdf() {
+# Function to find and open latest PDF
+open_latest_pdf() {
+    log_action "Looking for latest PDF to open"
+    
+    # Search directories for PDFs
+    local DOWNLOAD_DIRS=(
+        "$HOME/Downloads"
+        "$HOME/Desktop"
+        "$HOME/pos-system/invoices"
+        "$HOME/Documents"
+        "/tmp"
+    )
+    
     local latest_pdf=""
     local latest_time=0
     
+    # Find the most recent PDF
     for dir in "${DOWNLOAD_DIRS[@]}"; do
         if [ -d "$dir" ]; then
-            # Find PDFs modified in the last 24 hours, sorted by modification time
             while IFS= read -r -d '' file; do
                 if [ -f "$file" ]; then
                     file_time=$(stat -c %Y "$file" 2>/dev/null || echo 0)
@@ -181,118 +158,190 @@ find_latest_pdf() {
         fi
     done
     
-    echo "$latest_pdf"
-}
-
-# Find the latest PDF
-LATEST_PDF=$(find_latest_pdf)
-
-if [ -z "$LATEST_PDF" ] || [ ! -f "$LATEST_PDF" ]; then
-    log_action "No recent PDF found, opening file manager"
-    
-    # No recent PDF found, open file manager to Downloads
-    thunar "$HOME/Downloads" &
-    THUNAR_PID=$!
-    
-    # Bring file manager to front
-    sleep 1
-    wmctrl -a "thunar" || true
-    
-else
-    log_action "Opening PDF: $LATEST_PDF"
-    
-    # Open the PDF with evince (document viewer)
-    evince "$LATEST_PDF" &
-    EVINCE_PID=$!
-    
-    # Bring PDF viewer to front
-    sleep 1
-    wmctrl -a "evince" || wmctrl -a "Document Viewer" || true
-fi
-
-# Function to monitor for window close and return to kiosk
-monitor_viewer() {
-    # Wait for either evince or thunar to close
-    if [ -n "${EVINCE_PID:-}" ]; then
-        while kill -0 $EVINCE_PID 2>/dev/null; do
-            sleep 1
-        done
-    elif [ -n "${THUNAR_PID:-}" ]; then
-        while kill -0 $THUNAR_PID 2>/dev/null; do
-            sleep 1
-        done
-    fi
-    
-    log_action "Viewer closed, ensuring kiosk mode"
-    
-    # Make sure we return to kiosk mode
-    if ! pgrep -f "firefox.*--kiosk" > /dev/null; then
-        source ~/.bashrc
-        sleep 1
-        firefox --kiosk --new-instance --no-remote "http://localhost:3000" &
-        unclutter -idle 1 -root &
+    if [ -n "$latest_pdf" ] && [ -f "$latest_pdf" ]; then
+        log_action "Opening PDF: $latest_pdf"
+        
+        # Store the PDF path for reference
+        echo "$latest_pdf" > "$STATE_FILE"
+        
+        # Open with evince
+        evince "$latest_pdf" &
+        
+        # Wait for evince to start and bring to front
+        sleep 2
+        wmctrl -a "evince" 2>/dev/null || wmctrl -a "Document Viewer" 2>/dev/null || true
+        
+        return 0
+    else
+        log_action "No recent PDF found, opening file manager"
+        
+        # No recent PDF, open file manager
+        thunar "$HOME/Downloads" &
+        
+        # Wait and bring to front
+        sleep 2
+        wmctrl -a "thunar" 2>/dev/null || wmctrl -a "File Manager" 2>/dev/null || true
+        
+        echo "file_manager" > "$STATE_FILE"
+        return 1
     fi
 }
 
-# Start background monitoring
-monitor_viewer &
+# Main toggle logic
+main() {
+    log_action "Smart PDF toggle activated"
+    
+    local current_state=$(get_current_state)
+    log_action "Current state detected: $current_state"
+    
+    case "$current_state" in
+        "pdf")
+            # PDF is open, close it and return to kiosk
+            log_action "PDF viewer open - closing and returning to kiosk"
+            close_pdf_viewers
+            sleep 1
+            ensure_kiosk
+            echo "kiosk" > "$STATE_FILE"
+            ;;
+        "kiosk")
+            # Kiosk is active, open PDF
+            log_action "Kiosk active - opening PDF viewer"
+            if open_latest_pdf; then
+                echo "pdf" > "$STATE_FILE"
+            else
+                echo "file_manager" > "$STATE_FILE"
+            fi
+            ;;
+        "unknown")
+            # Unknown state, try to determine what to do
+            log_action "Unknown state - checking last action"
+            
+            # Check state file for last action
+            if [ -f "$STATE_FILE" ]; then
+                local last_state=$(cat "$STATE_FILE" 2>/dev/null || echo "")
+                log_action "Last state was: $last_state"
+                
+                case "$last_state" in
+                    "pdf"|"file_manager")
+                        # Last was PDF-related, go to kiosk
+                        ensure_kiosk
+                        echo "kiosk" > "$STATE_FILE"
+                        ;;
+                    *)
+                        # Default to opening PDF
+                        if open_latest_pdf; then
+                            echo "pdf" > "$STATE_FILE"
+                        else
+                            echo "file_manager" > "$STATE_FILE"
+                        fi
+                        ;;
+                esac
+            else
+                # No state file, default to opening PDF
+                if open_latest_pdf; then
+                    echo "pdf" > "$STATE_FILE"
+                else
+                    echo "file_manager" > "$STATE_FILE"
+                fi
+            fi
+            ;;
+    esac
+    
+    log_action "Toggle action completed"
+}
+
+# Run main function
+main "$@"
 EOF
 
-# PDF printing helper script
-cat > /home/posuser/bin/quick-print-pdf.sh << 'EOF'
+# Create enhanced kiosk startup that doesn't auto-open PDFs
+cat > /home/posuser/bin/start-enhanced-kiosk.sh << 'EOF'
 #!/bin/bash
 
-# Quick print the currently viewed PDF
+# Enhanced kiosk startup without auto-PDF opening
 export DISPLAY=:0
 
-# Get the active window
-ACTIVE_WINDOW=$(xdotool getactivewindow)
-WINDOW_NAME=$(xdotool getwindowname $ACTIVE_WINDOW)
+log_action() {
+    echo "$(date): $1" >> ~/.kiosk-startup.log
+}
 
-echo "$(date): Quick print requested for: $WINDOW_NAME" >> ~/.print.log
+log_action "Starting enhanced kiosk mode"
 
-# If it's evince (document viewer), send print command
-if echo "$WINDOW_NAME" | grep -qi "evince\|document viewer"; then
-    # Send Ctrl+P to print
-    xdotool key --window $ACTIVE_WINDOW ctrl+p
-elif echo "$WINDOW_NAME" | grep -qi "thunar"; then
-    # If it's file manager, try to print selected file
-    xdotool key --window $ACTIVE_WINDOW F2  # Rename/Properties
-else
-    # Fallback - try generic print command
-    xdotool key --window $ACTIVE_WINDOW ctrl+p
-fi
+# Kill any existing instances
+pkill firefox 2>/dev/null || true
+pkill unclutter 2>/dev/null || true
+pkill evince 2>/dev/null || true
+
+# Close any open PDF viewers or file managers from previous session
+wmctrl -c "evince" 2>/dev/null || true
+wmctrl -c "Document Viewer" 2>/dev/null || true
+wmctrl -c "thunar" 2>/dev/null || true
+
+sleep 2
+
+# Hide XFCE panel
+xfconf-query -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2 2>/dev/null || true
+xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 1 2>/dev/null || true
+
+# Ensure hotkeys are running
+killall xbindkeys 2>/dev/null || true
+sleep 1
+xbindkeys &
+
+# Start Firefox kiosk mode
+firefox \
+    --kiosk \
+    --new-instance \
+    --no-remote \
+    --class="POSKiosk" \
+    "http://localhost:3000" &
+
+# Wait for Firefox to start
+sleep 3
+
+# Hide cursor
+unclutter -idle 1 -root &
+
+# Ensure fullscreen
+wmctrl -r "POSKiosk" -b add,fullscreen 2>/dev/null || true
+
+# Set initial state
+echo "kiosk" > ~/.pdf-viewer-state
+
+log_action "Enhanced kiosk mode started successfully"
+
+echo "Enhanced kiosk mode active"
+echo "Smart PDF toggle ready - Press Alt+0 to toggle PDF viewer"
 EOF
 
-# Make all scripts executable
-chmod +x /home/posuser/bin/toggle-terminal.sh
-chmod +x /home/posuser/bin/view-latest-invoice.sh
-chmod +x /home/posuser/bin/quick-print-pdf.sh
-
-# Create enhanced xbindkeys configuration with better hotkey handling
-log "Creating enhanced hotkey configuration..."
+# Update hotkey configuration with smart toggle
+log "Updating hotkey configuration..."
 cat > /home/posuser/.xbindkeysrc << 'EOF'
-# Enhanced POS System Hotkeys Configuration
+# Enhanced POS System Hotkeys Configuration with Smart PDF Toggle
 
-# Admin mode toggle with Ctrl+Alt+T (works even in kiosk mode)
+# Admin mode toggle with Ctrl+Alt+T
 "bash /home/posuser/bin/toggle-terminal.sh"
     control+alt + t
 
-# View latest PDF invoice with Alt+KP_0 (Alt + Numpad 0)
-"bash /home/posuser/bin/view-latest-invoice.sh"
+# Smart PDF toggle with Alt+KP_0 (Alt + Numpad 0)
+"bash /home/posuser/bin/smart-pdf-toggle.sh"
     alt + KP_0
 
-# Alternative: Alt+0 (regular number key)
-"bash /home/posuser/bin/view-latest-invoice.sh"
+# Smart PDF toggle with Alt+0 (regular number key)
+"bash /home/posuser/bin/smart-pdf-toggle.sh"
     alt + 0
 
 # Quick print PDF with Ctrl+Alt+P
 "bash /home/posuser/bin/quick-print-pdf.sh"
     control+alt + p
 
-# Emergency escape from kiosk with Ctrl+Alt+E (technician emergency access)
-"pkill firefox; xfce4-terminal --fullscreen --title='Emergency Admin Mode' &"
+# Emergency escape from kiosk with Ctrl+Alt+E
+"pkill firefox; pkill evince; xfce4-terminal --fullscreen --title='Emergency Admin Mode' &"
     control+alt + e
+
+# Force close all viewers and return to kiosk with Ctrl+Alt+K
+"pkill firefox; pkill evince; wmctrl -c thunar; sleep 2; bash /home/posuser/bin/start-enhanced-kiosk.sh &"
+    control+alt + k
 
 # Hide/show cursor with Ctrl+Alt+H
 "pkill unclutter; unclutter -idle 1 -root &"
@@ -322,125 +371,73 @@ cat > /home/posuser/.xbindkeysrc << 'EOF'
     F11
 EOF
 
-# Add PDF handling functions to .bashrc
-log "Adding PDF handling functions to .bashrc..."
+# Update .bashrc with enhanced functions
+log "Updating .bashrc with smart toggle functions..."
 cat >> /home/posuser/.bashrc << 'EOF'
 
 # =============================================================================
-# PDF INVOICE HANDLING FUNCTIONS
+# ENHANCED PDF HANDLING WITH SMART TOGGLE
 # =============================================================================
 
-# View latest downloaded PDF invoice
-view-invoice() {
-    bash /home/posuser/bin/view-latest-invoice.sh
+# Smart PDF toggle function
+pdf-toggle() {
+    echo "Executing smart PDF toggle..."
+    bash /home/posuser/bin/smart-pdf-toggle.sh
 }
 
-# Print current PDF
-print-pdf() {
-    bash /home/posuser/bin/quick-print-pdf.sh
-}
-
-# Open invoice directory
-open-invoices() {
-    export DISPLAY=:0
-    thunar "$HOME/pos-system/invoices" &
-}
-
-# List recent PDFs
-list-invoices() {
-    echo "Recent PDF files (last 24 hours):"
-    echo "================================="
+# Check current PDF viewer state
+pdf-status() {
+    local state_file="$HOME/.pdf-viewer-state"
+    local log_file="$HOME/.pdf-toggle.log"
     
-    local dirs=("$HOME/Downloads" "$HOME/Desktop" "$HOME/pos-system/invoices" "$HOME/Documents")
+    echo "=== PDF Viewer Status ==="
     
-    for dir in "${dirs[@]}"; do
-        if [ -d "$dir" ]; then
-            echo ""
-            echo "In $dir:"
-            find "$dir" -name "*.pdf" -type f -mtime -1 -printf "%T@ %Tc %p\n" 2>/dev/null | sort -nr | head -5 | cut -d' ' -f2-
-        fi
-    done
-}
-
-# Enhanced kiosk mode that properly captures hotkeys
-start-kiosk() {
-    echo "Starting Firefox in enhanced kiosk mode..."
-    export DISPLAY=:0
-    
-    # Kill any existing Firefox instances
-    pkill firefox 2>/dev/null || true
-    pkill unclutter 2>/dev/null || true
-    sleep 2
-    
-    # Hide XFCE panel completely in kiosk mode
-    xfconf-query -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2 2>/dev/null || true
-    xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 1 2>/dev/null || true
-    
-    # Ensure hotkeys are running
-    killall xbindkeys 2>/dev/null || true
-    sleep 1
-    xbindkeys &
-    
-    # Start Firefox in kiosk mode with specific window class for better control
-    firefox \
-        --kiosk \
-        --new-instance \
-        --no-remote \
-        --class="POSKiosk" \
-        "http://localhost:3000" &
-    
-    # Wait for Firefox to start
-    sleep 3
-    
-    # Hide cursor after inactivity
-    unclutter -idle 1 -root &
-    
-    # Use wmctrl to ensure Firefox is truly fullscreen
-    sleep 2
-    wmctrl -r "POSKiosk" -b add,fullscreen 2>/dev/null || true
-    
-    echo "Enhanced kiosk mode started with hotkey support"
-    echo "Hotkeys available:"
-    echo "  Ctrl+Alt+T - Admin mode toggle"
-    echo "  Alt+0 or Alt+Numpad0 - View latest invoice"
-    echo "  Ctrl+Alt+P - Quick print"
-    echo "  Ctrl+Alt+E - Emergency admin access"
-}
-
-# Test hotkeys function
-test-hotkeys() {
-    echo "Testing hotkey system..."
-    echo "Current xbindkeys process:"
-    pgrep -fl xbindkeys || echo "xbindkeys not running"
-    
-    echo ""
-    echo "Hotkey configuration:"
-    if [ -f ~/.xbindkeysrc ]; then
-        echo "Configuration file exists"
-        grep -c "bash" ~/.xbindkeysrc && echo "Custom commands configured"
+    if [ -f "$state_file" ]; then
+        echo "Current state: $(cat "$state_file")"
     else
-        echo "No hotkey configuration found!"
+        echo "No state file found"
     fi
     
     echo ""
-    echo "Testing hotkey scripts:"
-    for script in toggle-terminal.sh view-latest-invoice.sh quick-print-pdf.sh; do
-        if [ -x "$HOME/bin/$script" ]; then
-            echo "✓ $script is executable"
-        else
-            echo "✗ $script missing or not executable"
-        fi
-    done
+    echo "Active processes:"
+    pgrep -fl "evince|firefox.*kiosk|thunar" || echo "None found"
     
     echo ""
-    echo "Restarting xbindkeys..."
-    killall xbindkeys 2>/dev/null || true
-    sleep 1
-    xbindkeys &
-    echo "Hotkeys reloaded"
+    echo "Active windows:"
+    wmctrl -l | grep -i "evince\|firefox\|thunar\|document" || echo "None found"
+    
+    if [ -f "$log_file" ]; then
+        echo ""
+        echo "Recent activity (last 5 lines):"
+        tail -5 "$log_file"
+    fi
 }
 
-# Add to help
+# Enhanced kiosk mode that doesn't auto-open PDFs
+start-kiosk() {
+    echo "Starting enhanced kiosk mode..."
+    bash /home/posuser/bin/start-enhanced-kiosk.sh
+}
+
+# Force return to kiosk from any state
+force-kiosk() {
+    echo "Force returning to kiosk mode..."
+    pkill firefox 2>/dev/null || true
+    pkill evince 2>/dev/null || true
+    wmctrl -c "thunar" 2>/dev/null || true
+    wmctrl -c "Document Viewer" 2>/dev/null || true
+    sleep 2
+    start-kiosk
+}
+
+# Clear PDF viewer state
+reset-pdf-state() {
+    rm -f ~/.pdf-viewer-state
+    rm -f ~/.pdf-toggle.log
+    echo "PDF viewer state reset"
+}
+
+# Update help with new commands
 pos-help() {
     echo "=== POS System Commands ==="
     echo "System Management:"
@@ -457,11 +454,15 @@ pos-help() {
     echo "  generate-key        - Generate new crypto key"
     echo ""
     echo "Kiosk Mode:"
-    echo "  start-kiosk         - Start Firefox kiosk mode (enhanced)"
+    echo "  start-kiosk         - Start enhanced kiosk mode"
     echo "  stop-kiosk          - Stop kiosk mode"
     echo "  restart-kiosk       - Restart kiosk mode"
+    echo "  force-kiosk         - Force return to kiosk from any state"
     echo ""
-    echo "PDF Invoice Handling:"
+    echo "Smart PDF Handling:"
+    echo "  pdf-toggle          - Smart toggle between PDF and kiosk"
+    echo "  pdf-status          - Check current PDF viewer state"
+    echo "  reset-pdf-state     - Reset PDF viewer state"
     echo "  view-invoice        - View latest downloaded PDF"
     echo "  print-pdf           - Print current PDF"
     echo "  open-invoices       - Open invoices folder"
@@ -485,120 +486,90 @@ pos-help() {
     echo "  pos-info            - Show system information"
     echo "  pos-help            - Show this help"
     echo ""
-    echo "Enhanced Hotkeys (work in kiosk mode):"
+    echo "Smart Hotkeys:"
+    echo "  Alt+0 or Alt+Num0   - SMART PDF TOGGLE"
+    echo "                        (PDF open → close PDF, return to kiosk)"
+    echo "                        (Kiosk active → open latest PDF)"
     echo "  Ctrl+Alt+T          - Toggle admin mode"
-    echo "  Alt+0 or Alt+Num0   - View latest PDF invoice"
     echo "  Ctrl+Alt+P          - Quick print current document"
     echo "  Ctrl+Alt+E          - Emergency admin access"
+    echo "  Ctrl+Alt+K          - Force return to kiosk mode"
     echo "  Ctrl+Alt+R          - Reload hotkeys"
     echo "  Ctrl+Alt+H          - Toggle cursor visibility"
 }
 EOF
 
-# Create desktop file for invoice viewer
-log "Creating desktop integration for PDF handling..."
-cat > /home/posuser/.local/share/applications/pos-invoice-viewer.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=POS Invoice Viewer
-Comment=View latest client invoice PDF
-Exec=/home/posuser/bin/view-latest-invoice.sh
-Icon=document-viewer
-Categories=Office;Viewer;
-NoDisplay=false
-EOF
-
-# Update the kiosk autostart to use enhanced version
+# Update kiosk autostart to use enhanced version
 cat > /home/posuser/.config/autostart/pos-kiosk.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
 Name=POS Enhanced Kiosk Mode
-Exec=/bin/bash -c 'sleep 15 && source ~/.bashrc && start-kiosk'
+Exec=/bin/bash -c 'sleep 15 && bash /home/posuser/bin/start-enhanced-kiosk.sh'
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 StartupNotify=false
 EOF
 
-# Restart xbindkeys autostart to ensure it loads after XFCE
-cat > /home/posuser/.config/autostart/xbindkeys.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=POS Enhanced Hotkeys
-Exec=/bin/bash -c 'sleep 5 && killall xbindkeys 2>/dev/null || true; sleep 1; xbindkeys'
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-StartupNotify=false
-EOF
-
-# Create a hotkey test desktop file for easy access
-cat > /home/posuser/Desktop/Test-Hotkeys.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=Test POS Hotkeys
-Exec=xfce4-terminal -e "bash -c 'source ~/.bashrc; test-hotkeys; echo; echo Press Enter to close; read'"
-Icon=preferences-desktop-keyboard
-Categories=System;Settings;
-EOF
-chmod +x /home/posuser/Desktop/Test-Hotkeys.desktop
+# Make all scripts executable
+chmod +x /home/posuser/bin/smart-pdf-toggle.sh
+chmod +x /home/posuser/bin/start-enhanced-kiosk.sh
 
 # Set proper ownership
 chown -R posuser:posuser /home/posuser/bin
-chown -R posuser:posuser /home/posuser/.local
-chown -R posuser:posuser /home/posuser/.config
 chown posuser:posuser /home/posuser/.xbindkeysrc
-chown posuser:posuser /home/posuser/Desktop/Test-Hotkeys.desktop
+chown posuser:posuser /home/posuser/.config/autostart/pos-kiosk.desktop
 
-# Restart xbindkeys if it's running
-log "Restarting hotkey daemon..."
+# Restart xbindkeys with new configuration
+log "Restarting hotkey daemon with smart toggle..."
 sudo -u posuser bash -c 'killall xbindkeys 2>/dev/null || true; sleep 2; DISPLAY=:0 xbindkeys &' || true
 
-log "Hotkey and PDF viewer fixes completed!"
+log "Smart PDF toggle enhancement completed!"
 echo ""
 echo "==============================================="
-echo "HOTKEY AND PDF VIEWER FIXES APPLIED!"
+echo "SMART PDF TOGGLE ENHANCEMENT APPLIED!"
 echo "==============================================="
 echo ""
-echo "NEW FUNCTIONALITY:"
+echo "🧠 SMART TOGGLE BEHAVIOR:"
+echo "========================="
+echo ""
+echo "Alt+0 or Alt+Numpad0 now intelligently toggles:"
+echo ""
+echo "📄 When PDF is open:"
+echo "   → Closes PDF viewer"
+echo "   → Returns to kiosk mode automatically"
+echo ""
+echo "🖥️  When kiosk is active:"
+echo "   → Opens most recent PDF in overlay mode"
+echo "   → PDF viewer appears on top of kiosk"
+echo ""
+echo "📁 When no recent PDF found:"
+echo "   → Opens file manager to Downloads folder"
+echo "   → Alt+0 again will close file manager → return to kiosk"
+echo ""
+echo "🔄 STATE MANAGEMENT:"
 echo "==================="
+echo "The system now tracks state in ~/.pdf-viewer-state"
+echo "It remembers what you were doing and toggles accordingly"
 echo ""
-echo "Enhanced Hotkeys (work even in Firefox kiosk mode):"
-echo "  Ctrl+Alt+T          - Toggle between kiosk and admin mode"
-echo "  Alt+0 or Alt+Num0   - View latest downloaded PDF invoice"  
-echo "  Ctrl+Alt+P          - Quick print current document"
+echo "🆕 NEW COMMANDS:"
+echo "==============="
+echo "  pdf-toggle          - Manual smart toggle"
+echo "  pdf-status          - Check current state"
+echo "  force-kiosk         - Force return to kiosk from anywhere"
+echo "  reset-pdf-state     - Reset state if things get confused"
+echo ""
+echo "🎯 ENHANCED HOTKEYS:"
+echo "==================="
+echo "  Alt+0/NumPad0       - Smart PDF toggle (main feature)"
+echo "  Ctrl+Alt+K          - Force return to kiosk"
+echo "  Ctrl+Alt+T          - Admin mode toggle"
 echo "  Ctrl+Alt+E          - Emergency admin access"
-echo "  Ctrl+Alt+R          - Reload hotkey system"
-echo "  Ctrl+Alt+H          - Toggle cursor hide/show"
 echo ""
-echo "PDF Invoice Features:"
-echo "  - Automatically finds most recent PDF in Downloads"
-echo "  - Opens with document viewer (evince) with print support"
-echo "  - File manager fallback if no recent PDF found"
-echo "  - Overlay mode - PDF viewer stays on top of kiosk"
-echo "  - Auto-returns to kiosk when PDF viewer is closed"
-echo "  - Print button available in document viewer"
+echo "🔧 NO AUTO-OPEN:"
+echo "================="
+echo "PDFs will NO LONGER auto-open on download"
+echo "You control when to view them with Alt+0"
 echo ""
-echo "New Commands Available:"
-echo "  view-invoice        - View latest PDF"
-echo "  print-pdf          - Print current document"  
-echo "  open-invoices      - Open invoice folder"
-echo "  list-invoices      - Show recent PDFs"
-echo "  test-hotkeys       - Test hotkey system"
-echo ""
-echo "TESTING:"
-echo "========="
-echo "1. Test admin toggle: Press Ctrl+Alt+T"
-echo "2. Test PDF viewer: Download a PDF, then press Alt+0"
-echo "3. Test emergency access: Press Ctrl+Alt+E"
-echo "4. Run 'test-hotkeys' command to verify setup"
-echo ""
-echo "TROUBLESHOOTING:"
-echo "================"
-echo "- If hotkeys don't work, run: test-hotkeys"
-echo "- Check logs in ~/.hotkey.log and ~/.invoice-viewer.log"
-echo "- Desktop shortcut available: Test-Hotkeys"
-echo ""
-echo "The system is now ready with enhanced hotkey support!"
-echo "No reboot required - hotkeys active immediately."
+echo "Ready to test! Press Alt+0 to try the smart toggle."
 echo "==============================================="
