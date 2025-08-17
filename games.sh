@@ -2,7 +2,7 @@
 set -e
 
 echo "=== Updating system ==="
-sudo apt update && sudo apt upgrade -y
+sudo apt update
 
 echo "=== Installing dependencies ==="
 sudo apt install -y \
@@ -29,7 +29,7 @@ sudo make install
 
 echo "=== Setting up Games folder ==="
 mkdir -p ~/Games
-echo "Place your Simpsons Hit & Run .iso or installer .exe into ~/Games"
+echo "Place your .iso or installer .exe into ~/Games"
 echo "To run it: box64 wine setup.exe"
 
 echo "=== Installation Complete! ==="
