@@ -59,21 +59,18 @@ For technical support, bug reports, or general inquiries:
 
 ### Method A: Automated Installation (Recommended)
 
-Use our simple shell script for a one-click installation experience:
+Use our simple shell script built for orangepi3b systems we sell:
 
 ```bash
 # Download and run the recommended installation script
-curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
+curl -sSL https://github.com/Molesafenetwork/nvminit.sh | bash
 ```
 ```bash
 # if script downloads but isnt executable use this
 chmod +x oemssdprod.sh
 ./oemssdprod.sh
 ```
-```bash
-# to update also use the above
-curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
-```
+
 **What the script does:**
 - Sets up encryption keys automatically
 - Configures admin commands
@@ -81,7 +78,7 @@ curl -sSL https://github.com/Molesafenetwork/OEMSSDPROD.sh | bash
 - Handles all dependencies and setup
 
 **Available installation scripts:**
-- `oemssdprod.sh` - **Recommended** for production environments
+- `nvminit.sh` - **Recommended** for production environments
 - Other scripts available for different hardware configurations
 
 ---
