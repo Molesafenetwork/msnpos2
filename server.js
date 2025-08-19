@@ -2204,7 +2204,7 @@ app.get('/api/search', async (req, res) => {
 app.get('/clock', checkAuth, (req, res) => {
     res.render('clock-in', {
         username: req.session.username,
-        isAdmin: req.session.username === 'admin',
+        isAdmin: req.session.isAdmin, // Use the session variable
         isLoggedIn: true
     });
 });
@@ -2282,7 +2282,7 @@ app.post('/api/clock/out', async (req, res) => {
 });
 
 app.get('/api/clock/logs', async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         res.status(403).json({ error: 'Unauthorized' });
         return;
     }
@@ -2298,7 +2298,7 @@ app.get('/api/clock/logs', async (req, res) => {
 
 // Middleware to check if user is clocked in
 async function requireClockIn(req, res, next) {
-    if (req.session.username === 'admin') {
+    if (req.session.isAdmin) {
         return next(); // Admins can bypass this check
     }
 
@@ -2324,7 +2324,7 @@ app.get('/pos', requireClockIn, (req, res) => {
     // Your existing POS route code
     res.render('pos-terminal', {
         username: req.session.username,
-        isAdmin: req.session.username === 'admin'
+        isAdmin: req.session.isAdmin
     });
 });
 
@@ -2335,7 +2335,7 @@ async function readJsonFile(filePath) {
 
 // Admin time logs page
 app.get('/time-logs', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.redirect('/dashboard');
     }
 
@@ -2360,7 +2360,7 @@ app.get('/time-logs', checkAuth, async (req, res) => {
             employees,
             lastActive,
             username: req.session.username,
-            isAdmin: req.session.username === 'admin'
+            isAdmin: req.session.isAdmin
         });
     } catch (error) {
         console.error('Error loading time logs:', error);
@@ -2370,7 +2370,7 @@ app.get('/time-logs', checkAuth, async (req, res) => {
 
 // API endpoint for getting unique employees
 app.get('/api/employees', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         res.status(403).json({ error: 'Unauthorized' });
         return;
     }
@@ -2387,7 +2387,7 @@ app.get('/api/employees', checkAuth, async (req, res) => {
 
 // Enhanced time logs endpoint with filtering
 app.get('/api/time-logs', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -2416,7 +2416,7 @@ app.get('/api/time-logs', checkAuth, async (req, res) => {
 
 // Add server refresh endpoint
 app.post('/api/refresh-server', checkAuth, (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -2431,7 +2431,7 @@ app.post('/api/refresh-server', checkAuth, (req, res) => {
 
 // Add these new endpoints
 app.get('/api/clock/employee-shifts', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -2460,7 +2460,7 @@ app.get('/api/clock/employee-shifts', checkAuth, async (req, res) => {
 });
 
 app.post('/api/clock/manual-entry', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -2482,7 +2482,7 @@ app.post('/api/clock/manual-entry', checkAuth, async (req, res) => {
 });
 
 app.get('/api/clock/export', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).send('Unauthorized');
     }
 
@@ -2537,7 +2537,7 @@ function calculateDuration(start, end) {
 }
 
 app.delete('/api/clock/entry/:id', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -2552,7 +2552,7 @@ app.delete('/api/clock/entry/:id', checkAuth, async (req, res) => {
 });
 
 app.put('/api/clock/entry/:id', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -2580,7 +2580,7 @@ app.put('/api/clock/entry/:id', checkAuth, async (req, res) => {
 
 // Employee profile route
 app.get('/employee-profile/:username', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.redirect('/dashboard');
     }
 
@@ -2594,7 +2594,7 @@ app.get('/employee-profile/:username', checkAuth, async (req, res) => {
 
 // Employee stats endpoint
 app.get('/api/employee-stats/:username', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (!req.session.isAdmin) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
