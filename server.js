@@ -756,7 +756,7 @@ app.get("/api/user", checkAuth, (req, res) => {
 // Add these routes after your other routes
 
 app.get("/manage-users", checkAuth, (req, res) => {
-  if (req.session.username === "admin") {
+  if (req.session.username.startsWith("admin")) {
     // Only allow admin to manage users
     res.render("manage-users");
   } else {
@@ -765,7 +765,7 @@ app.get("/manage-users", checkAuth, (req, res) => {
 });
 
 app.get("/api/users", checkAuth, (req, res) => {
-  if (req.session.username === "admin") {
+  if (req.session.username.startsWith("admin")) {
     res.json(Object.keys(users));
   } else {
     res.status(403).json({ error: "Access denied" });
@@ -797,7 +797,7 @@ async function updateEnvVariable(key, value) {
 
 // Update the user management endpoint
 app.post('/api/users', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (req.session.username.startsWith("admin")) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -823,7 +823,7 @@ app.post('/api/users', checkAuth, async (req, res) => {
 
 // Update the delete user endpoint similarly
 app.delete('/api/users/:username', checkAuth, async (req, res) => {
-    if (req.session.username !== 'admin') {
+    if (req.session.username.startsWith("admin")) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -1411,7 +1411,7 @@ function getCustomDeductions() {
 
 // Add admin check middleware
 function checkAdmin(req, res, next) {
-  if (req.session.username === 'admin' && req.session.isAdmin) {
+  if (req.session.username.startsWith('admin') && req.session.isAdmin) {
     next();
   } else {
     if (req.xhr) {
