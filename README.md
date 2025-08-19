@@ -1,7 +1,7 @@
 # MSN Tax Management System EST 2022
 # Minding Your Buisness - Streamlining your tax management needs.
 
-[![Version](https://img.shields.io/badge/version-1.9.4-blue.svg)](https://github.com/Molesafenetwork/msnpos2)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/Molesafenetwork/msnpos2)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.mit)
 
 A comprehensive tax management system for handling invoices, deductions, receipts, and tax calculations with advanced export capabilities.
