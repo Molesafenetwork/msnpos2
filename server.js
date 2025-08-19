@@ -2370,7 +2370,7 @@ app.get('/time-logs', checkAuth, async (req, res) => {
 
 // API endpoint for getting unique employees
 app.get('/api/employees', checkAuth, async (req, res) => {
-    if (!req.session.isAdmin) {
+    if (!req.session.username.startsWith('admin')) {
         res.status(403).json({ error: 'Unauthorized' });
         return;
     }
@@ -2416,7 +2416,7 @@ app.get('/api/time-logs', checkAuth, async (req, res) => {
 
 // Add server refresh endpoint
 app.post('/api/refresh-server', checkAuth, (req, res) => {
-    if (!req.session.isAdmin) {
+    if (!req.session.username.startsWith('admin')) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
     
