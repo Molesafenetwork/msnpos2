@@ -67,8 +67,8 @@ curl -sSL https://github.com/Molesafenetwork/nvminit.sh | bash
 ```
 ```bash
 # if script downloads but isnt executable use this
-chmod +x oemssdprod.sh
-./oemssdprod.sh
+chmod +x nvminit.sh
+./nvminit.sh
 ```
 
 **What the script does:**
