@@ -60,6 +60,21 @@ EOF
     chmod +x "$APPLICATIONS_DIR/$name.desktop"
 }
 
+# Function to check if package exists and install
+install_package() {
+    local package_name="$1"
+    local display_name="$2"
+    
+    if apt-cache search "^${package_name}$" | grep -q "^${package_name}"; then
+        echo -e "${GREEN}Installing $display_name via apt...${NC}"
+        sudo apt install -y "$package_name"
+        return 0
+    else
+        echo -e "${YELLOW}Package $package_name not found in repositories${NC}"
+        return 1
+    fi
+}
+
 # Function to download and extract
 download_and_extract() {
     local url="$1"
@@ -70,7 +85,7 @@ download_and_extract() {
     cd "$GAMES_DIR"
     
     if [ ! -f "$filename" ]; then
-        wget -O "$filename" "$url" || {
+        wget -O "$filename" "$url" || curl -L -o "$filename" "$url" || {
             echo -e "${RED}Failed to download $filename${NC}"
             return 1
         }
@@ -81,6 +96,9 @@ download_and_extract() {
             *.tar.gz|*.tgz)
                 tar -xzf "$filename"
                 ;;
+            *.tar.xz)
+                tar -xJf "$filename"
+                ;;
             *.zip)
                 unzip -q "$filename"
                 ;;
@@ -89,7 +107,8 @@ download_and_extract() {
                 ;;
             *.AppImage)
                 chmod +x "$filename"
-                mv "$filename" "$extract_dir"
+                mkdir -p "$extract_dir"
+                mv "$filename" "$extract_dir/"
                 ;;
         esac
     fi
@@ -97,35 +116,57 @@ download_and_extract() {
 
 echo -e "${GREEN}Starting game installations...${NC}"
 
-# 1. SuperTux (Mario-like platformer)
+# Update package lists first
+echo -e "${BLUE}Updating package lists...${NC}"
+sudo apt update
+
+# 1. SuperTux (Mario-like platformer) - Try multiple package names
 echo -e "${BLUE}Installing SuperTux...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt update && sudo apt install -y supertux2
+if install_package "supertux2" "SuperTux2"; then
     create_desktop_shortcut "SuperTux2" "supertux2" "supertux" "Run and jump platformer game"
+elif install_package "supertux" "SuperTux"; then
+    create_desktop_shortcut "SuperTux" "supertux" "supertux" "Run and jump platformer game"
+else
+    # Download SuperTux manually
+    echo -e "${YELLOW}Downloading SuperTux manually...${NC}"
+    SUPERTUX_URL="https://github.com/SuperTux/supertux/releases/download/v0.6.3/SuperTux-v0.6.3-Linux.tar.gz"
+    download_and_extract "$SUPERTUX_URL" "supertux.tar.gz" "SuperTux-v0.6.3-Linux"
+    
+    if [ -d "$GAMES_DIR/SuperTux-v0.6.3-Linux" ]; then
+        chmod +x "$GAMES_DIR/SuperTux-v0.6.3-Linux/supertux2"
+        create_desktop_shortcut "SuperTux2" "$GAMES_DIR/SuperTux-v0.6.3-Linux/supertux2" "$GAMES_DIR/SuperTux-v0.6.3-Linux/data/images/engine/icons/supertux-256x256.png" "Run and jump platformer game"
+    fi
 fi
 
 # 2. Battle for Wesnoth (Turn-based strategy RPG)
 echo -e "${BLUE}Installing Battle for Wesnoth...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y wesnoth
+if install_package "wesnoth" "Battle for Wesnoth"; then
     create_desktop_shortcut "Wesnoth" "wesnoth" "wesnoth-icon" "Fantasy turn-based strategy game"
 fi
 
 # 3. FreedroidRPG (Sci-fi RPG)
 echo -e "${BLUE}Installing FreedroidRPG...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y freedroidrpg
+if install_package "freedroidrpg" "FreedroidRPG"; then
     create_desktop_shortcut "FreedroidRPG" "freedroidrpg" "freedroidrpg" "Sci-fi role playing game"
 fi
 
 # 4. OpenTTD (Transport simulation)
 echo -e "${BLUE}Installing OpenTTD...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y openttd
+if install_package "openttd" "OpenTTD"; then
     create_desktop_shortcut "OpenTTD" "openttd" "openttd" "Transport simulation game"
+else
+    # Download OpenTTD manually
+    echo -e "${YELLOW}Downloading OpenTTD manually...${NC}"
+    OPENTTD_URL="https://cdn.openttd.org/openttd-releases/13.4/openttd-13.4-linux-generic-amd64.tar.xz"
+    download_and_extract "$OPENTTD_URL" "openttd.tar.xz" "openttd-13.4-linux-generic-amd64"
+    
+    if [ -d "$GAMES_DIR/openttd-13.4-linux-generic-amd64" ]; then
+        chmod +x "$GAMES_DIR/openttd-13.4-linux-generic-amd64/openttd"
+        create_desktop_shortcut "OpenTTD" "$GAMES_DIR/openttd-13.4-linux-generic-amd64/openttd" "$GAMES_DIR/openttd-13.4-linux-generic-amd64/media/openttd.64.png" "Transport simulation game"
+    fi
 fi
 
-# 5. Download SuperTuxKart AppImage (Racing game)
+# 5. Download SuperTuxKart (Racing game)
 echo -e "${BLUE}Installing SuperTuxKart...${NC}"
 STK_VERSION="1.4"
 STK_URL="https://github.com/supertuxkart/stk-code/releases/download/$STK_VERSION/SuperTuxKart-$STK_VERSION-linux-64bit.tar.xz"
@@ -136,39 +177,54 @@ if [ -d "$GAMES_DIR/SuperTuxKart-$STK_VERSION-linux-64bit" ]; then
     create_desktop_shortcut "SuperTuxKart" "$GAMES_DIR/SuperTuxKart-$STK_VERSION-linux-64bit/bin/supertuxkart" "$GAMES_DIR/SuperTuxKart-$STK_VERSION-linux-64bit/data/supertuxkart_512.png" "3D kart racing game"
 fi
 
-# 6. Download VDrift (Driving simulation)
+# 6. VDrift (Driving simulation)
 echo -e "${BLUE}Installing VDrift...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y vdrift
+if install_package "vdrift" "VDrift"; then
     create_desktop_shortcut "VDrift" "vdrift" "vdrift" "Realistic driving simulation"
 fi
 
 # 7. ScummVM (Point and click adventures)
 echo -e "${BLUE}Installing ScummVM...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y scummvm
+if install_package "scummvm" "ScummVM"; then
     create_desktop_shortcut "ScummVM" "scummvm" "scummvm" "Classic adventure game engine"
 fi
 
-# 8. Download 0 A.D. (Real-time strategy)
+# 8. 0 A.D. (Real-time strategy)
 echo -e "${BLUE}Installing 0 A.D....${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y 0ad
+if install_package "0ad" "0 A.D."; then
     create_desktop_shortcut "0 A.D." "0ad" "0ad" "Historical real-time strategy game"
 fi
 
 # 9. Minetest (Minecraft-like)
 echo -e "${BLUE}Installing Minetest...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y minetest
+if install_package "minetest" "Minetest"; then
     create_desktop_shortcut "Minetest" "minetest" "minetest" "Open source voxel game engine"
 fi
 
-# 10. Download Endless Sky (Space trading RPG)
+# 10. Endless Sky (Space trading RPG)
 echo -e "${BLUE}Installing Endless Sky...${NC}"
-if command -v apt >/dev/null 2>&1; then
-    sudo apt install -y endless-sky
+if install_package "endless-sky" "Endless Sky"; then
     create_desktop_shortcut "Endless Sky" "endless-sky" "endless-sky" "Space exploration and trading game"
+fi
+
+# 11. Add some additional games via direct download
+echo -e "${BLUE}Installing additional games...${NC}"
+
+# Alien Arena (First-person shooter)
+echo -e "${BLUE}Installing Alien Arena...${NC}"
+ALIEN_URL="https://github.com/alienarena/alienarena/releases/download/7_71_6/alienarena-7.71.6-x86_64.AppImage"
+cd "$GAMES_DIR"
+if [ ! -f "alienarena.AppImage" ]; then
+    wget -O "alienarena.AppImage" "$ALIEN_URL" || curl -L -o "alienarena.AppImage" "$ALIEN_URL"
+    if [ -f "alienarena.AppImage" ]; then
+        chmod +x "alienarena.AppImage"
+        create_desktop_shortcut "Alien Arena" "$GAMES_DIR/alienarena.AppImage" "application-x-executable" "Sci-fi first-person shooter"
+    fi
+fi
+
+# Warzone 2100 (Real-time strategy)
+if install_package "warzone2100" "Warzone 2100"; then
+    create_desktop_shortcut "Warzone 2100" "warzone2100" "warzone2100" "3D real-time strategy game"
 fi
 
 # Set permissions for desktop shortcuts
@@ -420,11 +476,13 @@ echo "• Battle for Wesnoth - Turn-based strategy RPG"
 echo "• FreedroidRPG - Sci-fi RPG"
 echo "• OpenTTD - Transport simulation"
 echo "• SuperTuxKart - Kart racing"
-echo "• VDrift - Driving simulation"
+echo "• VDrift - Driving simulation"  
 echo "• ScummVM - Classic adventures"
 echo "• 0 A.D. - Historical RTS"
 echo "• Minetest - Voxel sandbox"
 echo "• Endless Sky - Space trading RPG"
+echo "• Alien Arena - First-person shooter"
+echo "• Warzone 2100 - 3D strategy"
 echo ""
 echo -e "${YELLOW}Note: Some games may require additional setup or game data.${NC}"
 echo -e "${YELLOW}Check each game's documentation for details.${NC}"
