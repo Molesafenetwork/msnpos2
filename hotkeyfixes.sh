@@ -2,7 +2,7 @@
 
 # Smart Hotkey and PDF Management Fixes for POS System
 # Fixes: PDF inline display, multiple process spawning, smart toggles
-# Usage: sudo bash smart_hotkey_fixes.sh
+# Usage: sudo curl -fsSL https://github.com/Molesafenetwork/nvminit.sh | sudo bash
 
 set -euo pipefail
 
