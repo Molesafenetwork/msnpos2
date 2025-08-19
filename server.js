@@ -162,7 +162,7 @@ app.get("/dashboard", checkAuth, (req, res) => {
   });
 });
 
-app.get('/readme', (req, res) => {
+app.get('/pos-readme', (req, res) => {
     try {
         res.render('readme');
     } catch (error) {
