@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSN Tax Management System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #24292f;
+            background-color: #ffffff;
+            max-width: 968px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        h1 {
+            font-size: 2em;
+            font-weight: 600;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #d1d9e0;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #d1d9e0;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+
+        h4 {
+            font-size: 1em;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+
+        p {
+            margin-bottom: 16px;
+        }
+
+        .badges {
+            margin: 8px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+
+        .badge-blue { background-color: #0969da; }
+        .badge-green { background-color: #1a7f37; }
+        .badge-orange { background-color: #fd7e14; }
+        .badge-lightgrey { background-color: #6c757d; }
+
+        .crypto-address {
+            background-color: #f6f8fa;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            margin: 8px 0;
+            word-break: break-all;
+        }
+
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.45;
+            overflow: auto;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            border-radius: 6px;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        pre code {
+            background-color: transparent;
+            border: 0;
+            display: inline;
+            line-height: inherit;
+            margin: 0;
+            overflow: visible;
+            padding: 0;
+            word-wrap: normal;
+        }
+
+        ul, ol {
+            padding-left: 2em;
+            margin: 16px 0;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        strong {
+            font-weight: 600;
+        }
+
+        .warning-box {
+            background-color: #fff8dc;
+            border-left: 4px solid #d1242f;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .info-box {
+            background-color: #dbeafe;
+            border-left: 4px solid #0969da;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .details {
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+
+        .details summary {
+            padding: 8px 16px;
+            background-color: #f6f8fa;
+            border-bottom: 1px solid #d1d9e0;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .details[open] summary {
+            border-bottom: 1px solid #d1d9e0;
+        }
+
+        .details-content {
+            padding: 16px;
+        }
+
+        .contact-section {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .feature-item {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 12px;
+            border-left: 4px solid #0969da;
+        }
+
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #d1d9e0;
+            margin: 24px 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px 0;
+            border-top: 1px solid #d1d9e0;
+            margin-top: 48px;
+            color: #656d76;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><span class="emoji">📊</span>MSN Tax Management System EST 2022</h1>
+        <p><strong>Minding Your Business</strong> - Streamlining your tax management needs.</p>
+        
+        <div class="badges">
+            <span class="badge badge-blue">Version 1.9.4</span>
+            <span class="badge badge-green">MIT License</span>
+        </div>
+    </header>
+
+    <main>
+        <p>A comprehensive tax management system for handling invoices, deductions, receipts, and tax calculations with advanced export capabilities.</p>
+
+        <section>
+            <h2><span class="emoji">🚀</span>Current Version: 1.9.4</h2>
+            
+            <div class="info-box">
+                <p><strong>Open Source Notice:</strong> This version is OPEN SOURCE since it's made by one person which is me. I encourage people heavily to make modifications of this codebase so:</p>
+                <ol>
+                    <li>It suits your needs & other people's needs</li>
+                    <li>Ultimately works better</li>
+                </ol>
+                <p>There's lots that could change like the need for a proper database eventually, better touchscreen support, more & better admin commands, maybe make it into a React Native app and overhaul the design entirely.</p>
+            </div>
+
+            <div class="contact-section">
+                <p><strong>Submit Amazing Changes:</strong></p>
+                <p>If you make a change you think is amazing, contact <strong>admin@mole-safe.net</strong> or <strong>owner@mole-safe.net</strong> and use the subject: <code>"CODEBASE AMAZING CHANGE"</code></p>
+                <p>Using this subject word for word will forward it to my personal emails to make sure it's read. I don't mind rewarding people that put in hard work and do amazing things. I will still review every merge request to the extreme - you should explain in bullet points what you've changed and how it works if needed.</p>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>Distribution Restrictions:</strong></p>
+                <p>Let this message serve as written permission for all to modify & merge this software while you <strong>CANNOT AND SHOULDN'T DISTRIBUTE OR SELL THIS SOFTWARE IN ANY FORM</strong>. Making other repos with modified code for distribution/sale is <strong>STRICTLY PROHIBITED AND YOU WILL BE HELD LIABLE</strong>.</p>
+                <p>You may distribute and modify the code among privately owned devices by yourself without external help but you cannot make these devices running the software publicly available. MOLE SAFE NETWORK AND AUTHORIZED AFFILIATES ARE THE ONLY ONES ALLOWED TO SELL POS SYSTEMS WITH AS IS OR MODIFIED CODE OF THE CODEBASE THIS README.md RESIDES IN.</p>
+            </div>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2><span class="emoji">💰</span>Support Development</h2>
+            <p>Help keep me and this project stay alive and maintained:</p>
+
+            <h3>Direct Crypto Donations</h3>
+
+            <h4><strong>Bitcoin (BTC)</strong></h4>
+            <div class="crypto-address">bc1qh5h5y3qyselke5g0x5mg8kw865wx084mnz3xne</div>
+            <div class="badges">
+                <a href="https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy" class="badge badge-orange">Copy BTC Address</a>
+                <a href="https://trocador.app/?ticker_to=BTC&network_to=BTC&ref=6GZ3qkFXVy" class="badge badge-orange">Donate via AnonPay</a>
+            </div>
+
+            <h4><strong>Litecoin (LTC)</strong></h4>
+            <div class="crypto-address">ltc1qq9m0x240ajc9lvh9zd43eznu08hs8u8wj7423l</div>
+            <div class="badges">
+                <a href="https://trocador.app/?ticker_to=LTC&network_to=LTC&ref=6GZ3qkFXVy" class="badge badge-lightgrey">Copy LTC Address</a>
+                <a href="https://trocador.app/?ticker_to=LTC&network_to=LTC&ref=6GZ3qkFXVy" class="badge badge-lightgrey">Donate via AnonPay</a>
+            </div>
+
+            <h4><strong>Monero (XMR)</strong></h4>
+            <div class="crypto-address">8AEbCxSZ2c9BKkAMghe7p8RvWt4CLv11XKQLyijzfA4dBRmHUFuh9aBZ9vsSdkjFPcS1HrNGvF8vAMN4KdRKtU8gPRpfwW9</div>
+            <div class="badges">
+                <a href="https://trocador.app/?ticker_to=XMR&network_to=XMR&ref=6GZ3qkFXVy" class="badge badge-orange">Copy XMR Address</a>
+            </div>
+
+            <h3>Need to Buy Crypto First?</h3>
+            <p>If you don't have crypto yet, you can buy and exchange on <a href="https://trocador.app/?ref=6GZ3qkFXVy">Trocador</a> and then send to the addresses above.</p>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2><span class="emoji">📞</span>Contact & Support</h2>
+            <div class="contact-section">
+                <p>For technical support, bug reports, or general inquiries:</p>
+                <div class="badges">
+                    <a href="mailto:admin@mole-safe.net" class="badge badge-blue">Contact Admin</a>
+                </div>
+                <p><strong>Email:</strong> admin@mole-safe.net</p>
+            </div>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2><span class="emoji">📦</span>Installation Methods</h2>
+
+            <h3>Method A: Automated Installation (Recommended)</h3>
+            <p>Use our simple shell script for a one-click installation experience:</p>
+
+            <pre><code># Download and run the recommended installation script
+sudo curl -fsSL https://github.com/Molesafenetwork/nvminit.sh | sudo bash</code></pre>
+
+            <pre><code># if script downloads but isn't executable use this
+chmod +x nvminit.sh
+./nvminit.sh</code></pre>
+
+            <div class="info-box">
+                <p><strong>What the script does:</strong></p>
+                <ul>
+                    <li>Sets up encryption keys automatically</li>
+                    <li>Configures admin commands</li>
+                    <li>Guides you through <code>.env</code> configuration</li>
+                    <li>Handles all dependencies and setup</li>
+                </ul>
+                <p><strong>Available installation scripts:</strong></p>
+                <ul>
+                    <li><code>oemssdprod.sh</code> - <strong>Recommended</strong> for production environments</li>
+                    <li>Other scripts available for different hardware configurations</li>
+                </ul>
+            </div>
+
+            <h3>Method B: Manual Installation</h3>
+            <p>For users who prefer manual setup or need custom configurations:</p>
+
+            <h4>Step 1: Generate Encryption Key</h4>
+            <p>Use Node.js and crypto.js to generate a secure encryption key:</p>
+            <pre><code>node -e "const CryptoJS = require('crypto-js'); const key = CryptoJS.lib.WordArray.random(32); console.log(key.toString());"</code></pre>
+
+            <h4>Step 2: Configure Environment Variables</h4>
+            <p>Copy the generated encryption key and update your <code>.env</code> file:</p>
+            <pre><code>ENCRYPTION_KEY=your-generated-key-here
+# Update other variables according to your needs</code></pre>
+
+            <h4>Step 3: Verify Configuration</h4>
+            <ul>
+                <li>Check <code>.bash_history</code> for crypto.js key generation details</li>
+                <li>Review <code>.env</code> file for proper configuration layout</li>
+                <li>Ensure all variables correspond to your requirements</li>
+            </ul>
+
+            <div class="info-box">
+                <p><strong>Note:</strong> All generated data is stored in the <code>.data</code> directory and remains private, but encryption is still recommended for security.</p>
+            </div>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2><span class="emoji">📋</span>Changelog</h2>
+
+            <h3>2025-01-26 - V1.9.4 (Latest) - System-Wide Enhancements Update</h3>
+
+            <details class="details">
+                <summary><span class="emoji">🔍</span>Click to expand detailed changes</summary>
+                <div class="details-content">
+                    <p><strong>TL;DR:</strong> Major improvements to deductions handling, export functionality, and data management, along with bug fixes and performance optimizations.</p>
+
+                    <h4><span class="emoji">🎯</span>Detailed Changes</h4>
+
+                    <h4><strong>Deductions & Receipts Management</strong></h4>
+                    <ul>
+                        <li>Improved deductions handling with better validation
+                            <ul>
+                                <li>Auto removes duplicate and $0 value deductions</li>
+                                <li>Enhanced filtering for invalid entries</li>
+                                <li>Better source tracking for receipts vs manual deductions</li>
+                            </ul>
+                        </li>
+                        <li>Added comprehensive export functionality
+                            <ul>
+                                <li>New PDF export for deductions and receipts</li>
+                                <li>CSV and Excel export options added</li>
+                                <li>Customizable date range filtering for exports</li>
+                            </ul>
+                        </li>
+                        <li>Streamlined receipt management
+                            <ul>
+                                <li>All receipts now stored in <code>deductions.json</code></li>
+                                <li>Improved image handling and preview</li>
+                                <li>Better categorization and filtering</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4><strong>Performance & Stability</strong></h4>
+                    <ul>
+                        <li>Fixed infinite recursion issue in deductions handling</li>
+                        <li>Optimized data retrieval and storage</li>
+                        <li>Added compression support for better response times</li>
+                        <li>Improved error handling across all operations</li>
+                    </ul>
+
+                    <h4><strong>UI/UX Improvements</strong></h4>
+                    <ul>
+                        <li>Enhanced deductions page interface
+                            <ul>
+                                <li>Better visibility of valid entries</li>
+                                <li>Improved sorting and filtering</li>
+                                <li>Clearer display of receipt attachments</li>
+                            </ul>
+                        </li>
+                        <li>Added export options to relevant pages</li>
+                        <li>Improved feedback for user actions</li>
+                        <li>Better error messaging and validation feedback</li>
+                    </ul>
+
+                    <h4><strong>Technical Improvements</strong></h4>
+                    <ul>
+                        <li>Centralized data storage in <code>deductions.json</code></li>
+                        <li>Enhanced validation for all data entries</li>
+                        <li>Improved file handling and storage efficiency</li>
+                        <li>Better memory management and performance</li>
+                    </ul>
+
+                    <h4><strong>Bug Fixes</strong></h4>
+                    <ul>
+                        <li>Fixed issues with deductions not appearing in receipts view</li>
+                        <li>Resolved duplicate entries in exports</li>
+                        <li>Fixed Medicare Levy calculation issues</li>
+                        <li>Improved handling of invalid data entries</li>
+                    </ul>
+
+                    <h4><span class="emoji">⚠️</span>Known Issues</h4>
+                    <ul>
+                        <li>Medicare Levy calculations may need further refinement</li>
+                        <li>Some POS terminal features may be unstable for admin users (e.g., edit functionality)</li>
+                    </ul>
+
+                    <h4><span class="emoji">🔮</span>Coming Soon</h4>
+                    <ul>
+                        <li>Enhanced reporting features</li>
+                        <li>Improved tax calculation accuracy</li>
+                        <li>Further POS terminal stability improvements</li>
+                    </ul>
+                </div>
+            </details>
+
+            <h3>2025-01-25 - V1.9.3 - Admin Access Control Update</h3>
+
+            <details class="details">
+                <summary><span class="emoji">🔍</span>Click to expand changes</summary>
+                <div class="details-content">
+                    <h4><strong>Key Changes:</strong></h4>
+                    <ul>
+                        <li>Added admin-only restrictions for receipt and deduction management</li>
+                        <li>Improved dashboard organization and UI</li>
+                        <li>Enhanced security features and access controls</li>
+                        <li>Added server-side validation and better error handling</li>
+                        <li>Updated documentation and deployment instructions</li>
+                    </ul>
+
+                    <h4><strong>Known Issues:</strong></h4>
+                    <ul>
+                        <li>None noticed</li>
+                    </ul>
+
+                    <h4><strong>Planned Features:</strong></h4>
+                    <ul>
+                        <li>Enhanced audit logging</li>
+                        <li>Granular permissions</li>
+                        <li>Improved admin reporting</li>
+                    </ul>
+                </div>
+            </details>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2><span class="emoji">🔧</span>Features</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <strong>Invoice Management</strong> - Create, edit, and track invoices
+                </div>
+                <div class="feature-item">
+                    <strong>Deductions & Receipts</strong> - Comprehensive receipt management with image support
+                </div>
+                <div class="feature-item">
+                    <strong>Export Capabilities</strong> - PDF, CSV, and Excel export options
+                </div>
+                <div class="feature-item">
+                    <strong>Tax Calculations</strong> - Automated tax calculations including Medicare Levy
+                </div>
+                <div class="feature-item">
+                    <strong>Admin Controls</strong> - Secure admin-only features and access controls
+                </div>
+                <div class="feature-item">
+                    <strong>Data Security</strong> - Encrypted data storage and secure authentication
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2><span class="emoji">📝</span>License</h2>
+            <p>This project is licensed under the MIT License - see the <a href="LICENSE.mit">LICENSE</a> file for details.</p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <hr>
+        <p><strong>MSN Tax Management System - Minding Your Business v1.9.4</strong> - Streamlining your tax management needs.</p>
+    </footer>
+
+    <script>
+        // Add smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add copy functionality for crypto addresses
+        document.querySelectorAll('.crypto-address').forEach(address => {
+            address.style.cursor = 'pointer';
+            address.title = 'Click to copy address';
+            address.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const original = this.style.backgroundColor;
+                    this.style.backgroundColor = '#d4edda';
+                    setTimeout(() => {
+                        this.style.backgroundColor = original;
+                    }, 1000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
