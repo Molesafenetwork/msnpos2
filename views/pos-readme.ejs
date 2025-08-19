@@ -348,7 +348,96 @@ chmod +x nvminit.sh
         <section>
             <h2><span class="emoji">📋</span>Changelog</h2>
 
-            <h3>2025-01-26 - V1.9.4 (Latest) - System-Wide Enhancements Update</h3>
+            <h3>8/20/2025 - V2.0.1 (Latest) - More System-Wide Enhancements Update</h3>
+
+            <details class="details">
+                <summary><span class="emoji">🔍</span>Click to expand detailed changes</summary>
+                <div class="details-content">
+                    <p><strong>TL;DR:</strong> Major improvements to admin user handling, Ease of Installation, hotkeys, kiosk mode and custom commands built for orangepi3b ubuntu focal desktop kernal 6.</p>
+
+                    <h4><span class="emoji">🎯</span>Detailed Changes</h4>
+
+                    <h4><strong>Admin User Handling</strong></h4>
+                    <ul>
+                        <li>Now supports multiple admins
+                            <ul>
+                                <li>admins must start with "admin" buy can look like this "admin1234"</li>
+                                <li>You can use administrator aslong as it starts with "admin" case sensitive</li>
+                                <li>With these changes now multiple admins can login and you can track them better by using names</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4><strong>nvminit.sh our first easy installation script</strong></h4>
+                    <ul>
+                        <li>along with hotkeyfixes.sh these scripts make installation easy
+                            <ul>
+                                <li>run 1. nvminit.sh and then 2. hotkeyfixes.sh as posuser both by "sudo curl -fsSL URL | sudo bash"</li>
+                                <li>this is for orangepi3b ubuntu focal kernal 6 only but it will install dependencys, the msnpos repository, make the posuser and commands</li>
+                                <li>some commands are: update-pos restart-pos start-kiosk edit-env generate-key delete-orange-pi-user</li>
+                            </ul>
+                        </li>
+                        <li>it also makes commands to change the posuser and orangepi default passwords at ease</li>
+                        <li>this installation method is stable docker repos may need to be disable as itll sudo apt update and the focal ones are sometimes down</li>
+                        <li>many hotkeys dont work but if you use the orangepi3b without tailscale as a desktop pos instead of a server to load on your computers or tablets you can use alt+0 or num0 to enter your filemanager to view pdfs and print them</li>
+                        <li>you also need to disable pdf JavaScript in firefox if installing by yourself although i can sell the msnpos service guaranteed fully functional installed on a nmve drive up to 2tb min 126</li>
+                        <li>To use the pi as a pos system directly run start-kiosk but remember the server always starts on boot and is always usable from tailscale which installs by default run tailscale-up to link yourself and others</li>
+                    </ul>
+
+                    <h4><strong>Performance & Stability</strong></h4>
+                    <ul>
+                        <li>Fixed admin authentication issues across all routes and templates</li>
+                        <li>Optimized session management for multiple admin users</li>
+                        <li>Added automated installation scripts for streamlined deployment</li>
+                        <li>Improved error handling and validation for admin operations</li>
+                    </ul>
+
+                    <h4><strong>UI/UX Improvements</strong></h4>
+                    <ul>
+                        <li>Enhanced admin interface recognition
+                            <ul>
+                                <li>Better visibility for multiple admin accounts</li>
+                                <li>Improved admin section display logic</li>
+                                <li>Clearer authentication feedback</li>
+                            </ul>
+                        </li>
+                        <li>Added kiosk mode functionality for direct hardware usage</li>
+                        <li>Improved hotkey support for desktop operations</li>
+                        <li>Better error messaging for authentication failures</li>
+                    </ul>
+
+                    <h4><strong>Technical Improvements</strong></h4>
+                    <ul>
+                        <li>Centralized admin authentication logic using session variables</li>
+                        <li>Enhanced middleware for admin privilege checking</li>
+                        <li>Improved file handling and installation automation</li>
+                        <li>Better memory management and performance optimization</li>
+                    </ul>
+
+                    <h4><strong>Bug Fixes</strong></h4>
+                    <ul>
+                        <li>Fixed admin authentication to support multiple admin accounts</li>
+                        <li>Resolved issues with admin privilege checking across all routes</li>
+                        <li>Improved template rendering for admin status detection</li>
+                        <li>Fixed session variable handling for isAdmin checks</li>
+                    </ul>
+
+                    <h4><span class="emoji">⚠️</span>Known Issues</h4>
+                    <ul>
+                        <li>Some hotkey functionality may be limited on certain hardware configurations</li>
+                        <li>Docker repository conflicts may occur during installation on focal systems</li>
+                    </ul>
+
+                    <h4><span class="emoji">🔮</span>Coming Soon</h4>
+                    <ul>
+                        <li>Enhanced admin management interface</li>
+                        <li>Additional kiosk mode customization options</li>
+                        <li>Expanded hardware compatibility testing</li>
+                    </ul>
+                </div>
+            </details>
+
+            <h3>2025-01-26 - V1.9.4 (Last) - System-Wide Enhancements Update</h3>
 
             <details class="details">
                 <summary><span class="emoji">🔍</span>Click to expand detailed changes</summary>
