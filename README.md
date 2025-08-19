@@ -116,6 +116,33 @@ ENCRYPTION_KEY=your-generated-key-here
 
 ## 📋 Changelog
 
+### 8/19/2025 - V2.0.1 (Latest) - More System-Wide Enhancements Update
+
+<details>
+<summary>🔍 Click to expand detailed changes</summary>
+
+**TL;DR**: Major improvements to admin 
+user handling, Ease of Installation, hotkeys, kiosk mode and custom commands built for orangepi3b ubuntu focal desktop kernal 6.
+
+#### 🎯 Detailed Changes
+
+**Admin User Handling**
+- Now supports multiple admins
+  - admins must start with "admin" buy can look like this "admin1234"
+  - You can use administrator aslong as it starts with "admin" case sensitive
+  - With these changes now multiple admins can login and you can track them better by using names
+**nvminit.sh our first easy installation script**
+ - along with hotkeyfixes.sh these scripts make installation easy
+ - run 1. nvminit.sh and then 2. hotkeyfixes.sh as posuser both by "sudo curl -fsSL URL | sudo bash"
+ - this is for orangepi3b ubuntu focal kernal 6 only but it will install dependencys, the msnpos repository, make the posuser and commands
+ - some commands are: update-pos restart-pos start-kiosk edit-env generate-key delete-orange-pi-user
+ - it also makes commands to change the posuser and orangepi default passwords at ease
+ - this installation method is stable docker repos may need to be disable as itll sudo apt update and the focal ones are sometimes down
+ - many hotkeys dont work but if you use the orangepi3b without tailscale as a desktop pos instead of a server to load on your computers or tablets you can use alt+0 or num0 to enter your filemanager to view pdfs and print them
+ - you also need to disable pdf JavaScript in firefox if installing by yourself although i can sell the msnpos service guaranteed fully functional installed on a nmve drive up to 2tb min 126
+ - To use the pi as a pos system directly run start-kiosk but remember the server always starts on boot and is always usable from tailscale which installs by default run tailscale-up to link yourself and others 
+
+
 ### 2025-01-26 - V1.9.4 (Latest) - System-Wide Enhancements Update
 
 <details>
