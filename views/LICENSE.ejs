@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License - MSN Tax Management System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #24292f;
+            background-color: #ffffff;
+            max-width: 968px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 24px 0;
+            border-bottom: 2px solid #0969da;
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #f6f8fa 0%, #ffffff 100%);
+            border-radius: 8px;
+            margin-top: 0;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #0969da;
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #656d76;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        .license-container {
+            background-color: #f6f8fa;
+            border: 1px solid #d1d9e0;
+            border-radius: 8px;
+            padding: 32px;
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .license-container::before {
+            content: "📄";
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 24px;
+            opacity: 0.5;
+        }
+
+        .copyright-section {
+            background-color: #0969da;
+            color: white;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .license-text {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            background-color: #ffffff;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            padding: 24px;
+            margin: 16px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .permission-section {
+            background-color: #fff8dc;
+            border-left: 4px solid #fd7e14;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .permission-section h3 {
+            color: #fd7e14;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        .conditions-section {
+            background-color: #fff5f5;
+            border-left: 4px solid #d1242f;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .conditions-section h3 {
+            color: #d1242f;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        .warranty-section {
+            background-color: #f0f9ff;
+            border-left: 4px solid #0969da;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .warranty-section h3 {
+            color: #0969da;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .emphasis {
+            font-weight: 700;
+            color: #d1242f;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px 0;
+            border-top: 1px solid #d1d9e0;
+            margin-top: 48px;
+            color: #656d76;
+        }
+
+        .back-link {
+            display: inline-block;
+            background-color: #0969da;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+
+        .back-link:hover {
+            background-color: #0550ae;
+            color: white;
+            text-decoration: none;
+        }
+
+        .metadata {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f6f8fa;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #656d76;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1;
+            color: #fff;
+            background-color: #0969da;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+            
+            .license-container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .metadata {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📄 Software License</h1>
+        <p class="subtitle">MSN Tax Management System</p>
+    </div>
+
+    <div class="metadata">
+        <span><strong>License Type:</strong> <span class="badge">Custom License</span></span>
+        <span><strong>Last Updated:</strong> <%= new Date().toLocaleDateString() %></span>
+    </div>
+
+    <div class="license-container">
+        <div class="copyright-section">
+            Copyright (c) 2024 Mole Safe Network
+        </div>
+
+        <div class="permission-section">
+            <h3>🔓 Permission Grant</h3>
+            <p>Permission is hereby granted, <span class="highlight">free of charge</span>, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, <span class="emphasis">only with prior written contractual permission from Mole Safe Network</span>.</p>
+        </div>
+
+        <div class="conditions-section">
+            <h3>⚠️ Important Conditions</h3>
+            <p>This permission applies under the following conditions:</p>
+            <p><span class="emphasis">You may not distribute, modify, or use the Software in any form, including for commercial or non-commercial purposes, without obtaining prior written contractual permission from Mole Safe Network.</span></p>
+            <p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+        </div>
+
+        <div class="warranty-section">
+            <h3>🛡️ Warranty Disclaimer</h3>
+            <div class="license-text">THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</div>
+        </div>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+        <a href="/readme" class="back-link">View README</a>
+    </div>
+
+    <div class="footer">
+        <p><strong>MSN Tax Management System</strong> - Mole Safe Network © 2024</p>
+        <p>For licensing inquiries, contact: <a href="mailto:admin@mole-safe.net">admin@mole-safe.net</a></p>
+    </div>
+
+    <script>
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add copy functionality for license text
+        document.querySelector('.license-text').addEventListener('click', function() {
+            navigator.clipboard.writeText(this.textContent).then(() => {
+                const original = this.style.backgroundColor;
+                this.style.backgroundColor = '#d4edda';
+                this.style.cursor = 'pointer';
+                this.title = 'License text copied to clipboard!';
+                setTimeout(() => {
+                    this.style.backgroundColor = original;
+                    this.title = 'Click to copy license text';
+                }, 2000);
+            });
+        });
+
+        // Set initial tooltip
+        document.querySelector('.license-text').title = 'Click to copy license text';
+        document.querySelector('.license-text').style.cursor = 'pointer';
+    </script>
+</body>
+</html>
