@@ -171,6 +171,15 @@ app.get('/pos-readme', (req, res) => {
     }
 });
 
+app.get('/LICENSE', (req, res) => {
+    try {
+        res.render('LICENSE');
+    } catch (error) {
+        console.error('Error rendering license.mit:', error);
+        res.status(500).send('Error loading license');
+    }
+});
+
 app.get("/create-invoice", checkAuth, (req, res) => {
   res.render("create-invoice");
 });
