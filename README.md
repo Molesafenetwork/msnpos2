@@ -63,7 +63,7 @@ Use our simple shell script built for orangepi3b systems we sell:
 
 ```bash
 # Download and run the recommended installation script
-curl -sSL https://github.com/Molesafenetwork/nvminit.sh | bash
+sudo curl -fsSL https://github.com/Molesafenetwork/nvminit.sh | sudo bash
 ```
 ```bash
 # if script downloads but isnt executable use this
