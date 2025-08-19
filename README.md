@@ -143,7 +143,7 @@ user handling, Ease of Installation, hotkeys, kiosk mode and custom commands bui
  - To use the pi as a pos system directly run start-kiosk but remember the server always starts on boot and is always usable from tailscale which installs by default run tailscale-up to link yourself and others 
 
 
-### 2025-01-26 - V1.9.4 (Latest) - System-Wide Enhancements Update
+### 2025-01-26 - V1.9.4 (Last) - System-Wide Enhancements Update
 
 <details>
 <summary>🔍 Click to expand detailed changes</summary>
