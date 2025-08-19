@@ -162,6 +162,15 @@ app.get("/dashboard", checkAuth, (req, res) => {
   });
 });
 
+app.get('/readme', (req, res) => {
+    try {
+        res.render('readme');
+    } catch (error) {
+        console.error('Error rendering readme:', error);
+        res.status(500).send('Error loading readme page');
+    }
+});
+
 app.get("/create-invoice", checkAuth, (req, res) => {
   res.render("create-invoice");
 });
