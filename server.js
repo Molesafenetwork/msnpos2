@@ -164,10 +164,19 @@ app.get("/dashboard", checkAuth, (req, res) => {
 
 app.get('/pos-readme', (req, res) => {
     try {
-        res.render('readme');
+        res.render('pos-readme');
     } catch (error) {
         console.error('Error rendering readme:', error);
         res.status(500).send('Error loading readme page');
+    }
+});
+
+app.get('/LICENSE', (req, res) => {
+    try {
+        res.render('LICENSE');
+    } catch (error) {
+        console.error('Error rendering LICENSE.MIT:', error);
+        res.status(500).send('Error loading LICENSE.MIT');
     }
 });
 
