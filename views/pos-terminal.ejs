@@ -786,7 +786,7 @@
             </div>
         </div>
     
-        <% if (isAdmin) { %>
+        <% if (username.startsWith('admin')) { %>
         <div class="action-buttons">
             <button onclick="showAddItemModal()">Add Item</button>
             <button onclick="showAddCategoryModal()">Add Category</button>
