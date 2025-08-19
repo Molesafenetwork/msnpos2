@@ -134,10 +134,15 @@ app.post("/login", async (req, res) => {
     if (users[username] && users[username] === password) {
       req.session.authenticated = true;
       req.session.username = username;
-      req.session.isAdmin = username === 'admin'; // Explicitly set admin status
+      req.session.isAdmin = username.startsWith('admin'); // Check if username starts with 'admin'
       res.redirect("/dashboard");
     } else {
-      res.status(401).send("Invalid username or password");
+      res.status(401).send(`
+        <div style="text-align: center; margin-top: 100px; font-family: Arial, sans-serif;">
+          <h3 style="color: #d32f2f;">Invalid username or password</h3>
+          <a href="/login" style="display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">← Back to Login</a>
+        </div>
+      `);
     }
   } catch (error) {
     console.error("Error in login process:", error);
