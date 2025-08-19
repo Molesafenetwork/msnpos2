@@ -171,12 +171,13 @@ app.get('/pos-readme', (req, res) => {
     }
 });
 
-app.get('/LICENSE', (req, res) => {
+// License route
+app.get('/license', (req, res) => {
     try {
-        res.render('LICENSE');
+        res.render('license');
     } catch (error) {
-        console.error('Error rendering license.mit:', error);
-        res.status(500).send('Error loading license');
+        console.error('Error rendering license:', error);
+        res.status(500).send('Error loading license page');
     }
 });
 
