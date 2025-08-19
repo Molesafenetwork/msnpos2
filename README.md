@@ -6,7 +6,7 @@
 
 A comprehensive tax management system for handling invoices, deductions, receipts, and tax calculations with advanced export capabilities.
 
-## 🚀 Current Version: 1.9.4
+## 🚀 Current Version: 2.0.1
 
 This version is OPEN SOUCE since its made by one person which is me. I encourage people heavily to make modifications of this codebase so 1. it suits your needs & other peoples needs 2. ultimatly works better. theirs lots that could change like the need for a proper database eventually, better touchscreen support, more & better admin commands, maybe make it into a react native app and overhaul the design entirely. if you make a change you thinks amazing contact the admin@mole-safe.net or owner@mole-safe.net and use the subject: "CODEBASE AMAZING CHANGE" using this subject word for word will foward it to my personal emails to make sure its read i dont mind rewarding people that put in hard work and do amazing things i will still review every merge request to the extreme you should explain in bullet points what you've changed and how it works if needed.
 
