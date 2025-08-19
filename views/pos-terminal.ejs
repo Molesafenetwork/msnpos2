@@ -849,7 +849,7 @@
         </div>
     </div>
 
-    <% if (username === 'admin') { %>
+    <% if (username.startsWith('admin')) { %>
     <!-- Add Item Modal -->
     <div id="addItemModal" style="display: none;" class="modal">
         <div class="modal-content">
@@ -904,7 +904,7 @@
 
     <script>
         // Pass the username to client-side JavaScript
-        window.isAdmin = <%= username === 'admin' %>;
+        window.isAdmin = <%= username.startsWith('admin') %>;
     </script>
     <script src="/js/pos-terminal.js"></script>
     <script>
