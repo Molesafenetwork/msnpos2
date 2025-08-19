@@ -131,6 +131,7 @@ user handling, Ease of Installation, hotkeys, kiosk mode and custom commands bui
   - admins must start with "admin" buy can look like this "admin1234"
   - You can use administrator aslong as it starts with "admin" case sensitive
   - With these changes now multiple admins can login and you can track them better by using names
+  
 **nvminit.sh our first easy installation script**
  - along with hotkeyfixes.sh these scripts make installation easy
  - run 1. nvminit.sh and then 2. hotkeyfixes.sh as posuser both by "sudo curl -fsSL URL | sudo bash"
