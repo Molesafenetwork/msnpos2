@@ -55,10 +55,16 @@ sudo sed -i '/<Location \/>/,/<\/Location>/ s/Allow localhost/Allow all/' /etc/c
 # Restart CUPS to apply configuration
 sudo systemctl restart cups
 
+# Install additional drivers that work well with TS3400 series
+echo "Installing additional drivers for TS3400 compatibility..."
+sudo apt install -y system-config-printer || echo "system-config-printer not available"
+
 # Check USB devices
 echo ""
 echo "Checking for USB devices..."
 lsusb | grep -i canon || echo "No Canon devices found via USB"
+echo "Looking specifically for TS3400..."
+lsusb | grep -E "(04a9|Canon)" || echo "No Canon devices detected"
 
 # Check if printer is detected
 echo ""
@@ -75,9 +81,9 @@ echo "3. Go to Administration > Add Printer"
 echo "4. Your printer should appear in the local printers list"
 echo "5. Follow the web interface to complete setup"
 echo ""
-echo "Alternative command line setup:"
-echo "- Run 'sudo lpadmin -p CanonPrinter -E -v usb://Canon/PRINTER_MODEL'"
-echo "- Replace PRINTER_MODEL with your actual printer model"
+echo "Alternative command line setup for TS3400:"
+echo "- Run 'sudo lpadmin -p CanonTS3400 -E -v usb://Canon/TS3400%20series'"
+echo "- Or try: 'sudo lpadmin -p CanonTS3400 -E -v usb://Canon/TS3420'"
 echo ""
 echo "Troubleshooting:"
 echo "- Check 'lsusb' to see if printer is detected"
